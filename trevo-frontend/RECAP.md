@@ -62,10 +62,11 @@
 - `DocumentActions.tsx` — dropdown menu with Print, Email, Share, Delete
 - `ListFilters.tsx` — popover-based filter panel with text/select/date/number inputs
 - `Breadcrumbs.tsx` — path-aware breadcrumbs in shell
-- `Skeleton.tsx` — `Skeleton`, `FormSkeleton`, `TableSkeleton`, `CardSkeleton`, `DashboardSkeleton`
-- `ErrorBoundary.tsx`
-- `shadcn/card.tsx`, `shadcn/button.tsx`, `shadcn/input.tsx`, `shadcn/label.tsx`, `shadcn/badge.tsx`, `shadcn/tabs.tsx`, `shadcn/select.tsx`, `shadcn/dialog.tsx`, `shadcn/dropdown-menu.tsx`, `shadcn/popover.tsx`, `shadcn/tooltip.tsx`, `shadcn/avatar.tsx`, `shadcn/checkbox.tsx`, `shadcn/textarea.tsx`, `shadcn/scroll-area.tsx`, `shadcn/separator.tsx`, `shadcn/slot.tsx`
+- `Skeleton.tsx` — `Skeleton`, `FormSkeleton`, `TableSkeleton`, `CardSkeleton`, `DashboardSkeleton`, `ReportSkeleton`, `CalendarSkeleton`
+- `ListFilters.tsx` — popover-based filter panel with operator-aware filters (text/select/date/number)
+- `DocumentActions.tsx` — dropdown menu with Print, Email, Share, Delete
 - `charts.tsx` — `BarChartComponent`, `LineChartComponent`, `PieChartComponent` via recharts
+- `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents, includes client-side validation before save, Ctrl+S save, Ctrl+Z undo (50-entry history), auto-save every 30s when dirty, polling-based external change detection with toast notifications
 
 ### Dynamic form system (`lib/trevo-form/`)
 - `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents, includes client-side validation before save, Ctrl+S keyboard shortcut, auto-save every 30s when dirty
@@ -81,25 +82,23 @@
 
 ### Must-have for production parity
 - [ ] **Child table save backend**: ensure `savedocs` correctly serializes nested child table arrays with parent/child DocType relationships
-- [ ] **List view filters**: proper date-range, numeric-range, link filters with operator selectors
-- [ ] **Form validation**: client-side validation using Frappe meta (mandatory, regex, min/max) before save — partially implemented, needs field-level error display
-- [ ] **Document actions**: Print, Email, Share, Delete with proper Frappe method calls — menu exists, needs backend method verification
-- [ ] **Loading skeletons**: replace remaining spinners with skeleton loaders in reports/calendar
-- [ ] **Status / DocStatus badges**: render visual badges for Draft, Submitted, Cancelled — implemented in list/detail, needs expansion
+- [ ] **List view filters**: proper date-range, numeric-range, link filters with operator selectors (operators added, dual-input UI for Between pending)
+- [ ] **Form validation**: client-side validation using Frappe meta (mandatory, regex, min/max) before save — field-level error display via FormControl `error` prop
+- [ ] **Document actions**: Print, Email, Share, Delete with proper Frappe method calls — implemented via BFF proxy, needs backend verification against live instance
 
 ### Nice-to-have (Phase 2)
-- [x] **Keyboard shortcuts**: Ctrl+S save in forms
+- [x] **Keyboard shortcuts**: Ctrl+S save, Ctrl+Z undo (50-entry history stack)
 - [x] **Auto-save**: draft autosave every 30s when form is dirty
-- [ ] **Realtime updates**: Socket.io / frappe realtime for document changes
-- [ ] **Import**: CSV import for list view
-- [ ] **Bulk actions**: bulk submit, cancel, update
-- [ ] **Charts**: recharts integration for report charts (bar/line/pie components exist)
+- [x] **Realtime updates**: polling-based document refresh every 30s with toast notifications when modified externally
+- [x] **Import**: CSV import for list view (papaparse-based with field header mapping)
+- [x] **Bulk actions**: bulk submit, cancel, discard for submittable DocTypes
+- [x] **Charts**: recharts integration for report charts (bar/line/pie components exist)
 
 ### Backend / infra
 - [ ] **Frappe bench app**: move custom trial/billing logic out of frontend into a proper bench app if needed
-- [ ] **Environment config**: NEXT_PUBLIC_FRAPPE_BASE_URL, FRAPPE_BACKEND_URL, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-- [ ] **Docker / deploy config**: vercel.json or Dockerfile
-- [ ] **E2E tests**: Playwright against localhost:8000
+- [x] **Environment config**: .env.example with documented variables
+- [x] **Docker / deploy config**: Dockerfile + .dockerignore added
+- [x] **E2E tests**: Playwright scaffolding added (config + basic desk spec)
 
 ---
 
@@ -113,3 +112,6 @@
 7. **Recharts for charts** — bar, line, pie chart components used in workspace and reports.
 8. **Keyboard shortcuts** — Ctrl+S triggers save in forms when not focused on input fields.
 9. **Auto-save** — forms auto-save every 30 seconds when dirty (modified since last save).
+10. **Ctrl+Z undo** — 50-entry local history stack per form, restored via Ctrl+Z / Cmd+Z.
+11. **External change detection** — edit/detail pages poll `useDocument` every 30s and show a toast when the `modified` timestamp changes.
+12. **Security headers** — X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy in next.config.ts.
