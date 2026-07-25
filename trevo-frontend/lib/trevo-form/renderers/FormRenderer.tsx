@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { DocTypeMeta, DocField, FrappeDocument } from "@/lib/frappe/types";
 import type { TrevoDocument } from "../types";
 import { parseDoctypeMeta } from "../meta/parseDoctypeMeta";
@@ -61,13 +61,27 @@ export default function FormRenderer({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [lastSavedValues, setLastSavedValues] = useState<string>("");
+  const [localValues, setLocalValues] = useState<Record<string, unknown>>(formValues);
+  const historyRef = useRef<Array<Record<string, unknown>>>([]);
+
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setLocalValues(formValues);
+    historyRef.current = [];
+  }, [doc, formValues]);
+
   const isDirty = useMemo(() => {
-    const current = JSON.stringify(formValues);
+    const current = JSON.stringify(localValues);
     return current !== lastSavedValues;
-  }, [formValues, lastSavedValues]);
+  }, [localValues, lastSavedValues]);
 
   const handleFieldChange = (fieldname: string, value: unknown) => {
-    const next = { ...formValues, [fieldname]: value };
+    historyRef.current = [...historyRef.current, localValues];
+    if (historyRef.current.length > 50) {
+      historyRef.current.shift();
+    }
+    const next = { ...localValues, [fieldname]: value };
+    setLocalValues(next);
     onChange?.(next);
     store.setField(fieldname, value);
     setErrors((prev) => {
@@ -77,43 +91,57 @@ export default function FormRenderer({
     });
   };
 
+  const handleUndo = useCallback(() => {
+    if (historyRef.current.length === 0) return;
+    const previous = historyRef.current[historyRef.current.length - 1];
+    historyRef.current = historyRef.current.slice(0, -1);
+    setLocalValues(previous);
+    onChange?.(previous);
+  }, [onChange]);
+
   const runValidation = useCallback(() => {
-    const validationErrors = validateFields(fields, formValues);
+    const validationErrors = validateFields(fields, localValues);
     const mapped = Object.fromEntries(validationErrors.map((e) => [e.fieldname, e.message])) as Record<string, string>;
     setErrors(mapped);
     return validationErrors.length === 0;
-  }, [fields, formValues]);
+  }, [fields, localValues]);
 
   const handleSave = useCallback(async () => {
     if (!runValidation()) return;
-    const next = { ...formValues };
+    const next = { ...localValues };
     await onSave?.(next);
     setLastSavedValues(JSON.stringify(next));
-  }, [runValidation, onSave, formValues]);
+  }, [runValidation, onSave, localValues]);
 
   const handleSubmit = useCallback(async () => {
     if (!runValidation()) return;
-    const next = { ...formValues };
+    const next = { ...localValues };
     await onSubmit?.(next);
     setLastSavedValues(JSON.stringify(next));
-  }, [runValidation, onSubmit, formValues]);
+  }, [runValidation, onSubmit, localValues]);
 
   useEffect(() => {
-    if (!onSave || !editable || isReadOnly) return;
+    if (!editable || isReadOnly) return;
 
     const handler = (e: KeyboardEvent) => {
       const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes((window.document.activeElement as HTMLElement | null)?.tagName ?? "");
-      if ((e.metaKey || e.ctrlKey) && e.key === "s" && !isInput) {
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "s" && !isInput && onSave) {
         e.preventDefault();
         if (runValidation()) {
           void handleSave();
         }
       }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !isInput) {
+        e.preventDefault();
+        handleUndo();
+      }
     };
 
     window.document.addEventListener("keydown", handler);
     return () => window.document.removeEventListener("keydown", handler);
-  }, [onSave, editable, isReadOnly, runValidation, handleSave]);
+  }, [editable, isReadOnly, onSave, runValidation, handleSave, handleUndo]);
 
   useEffect(() => {
     if (!onSave || !editable || isReadOnly || !isDirty) return;
@@ -165,7 +193,7 @@ export default function FormRenderer({
                 <FormControl
                   key={field.fieldname}
                   field={field as DocField}
-                  value={formValues[field.fieldname]}
+                  value={localValues[field.fieldname]}
                   onChange={(val) => handleFieldChange(field.fieldname, val)}
                   disabled={!editable || isReadOnly}
                   error={errors[field.fieldname]}
@@ -179,7 +207,7 @@ export default function FormRenderer({
                   </h4>
                   <TableField
                     field={tableField as DocField}
-                    value={formValues[tableField.fieldname]}
+                    value={localValues[tableField.fieldname]}
                     onChange={(val) => handleFieldChange(tableField.fieldname, val)}
                     disabled={!editable || isReadOnly}
                   />
@@ -259,7 +287,7 @@ export default function FormRenderer({
             <FormControl
               key={field.fieldname}
               field={field as DocField}
-              value={formValues[field.fieldname]}
+              value={localValues[field.fieldname]}
               onChange={(val) => handleFieldChange(field.fieldname, val)}
               disabled={!editable || isReadOnly}
               error={errors[field.fieldname]}
