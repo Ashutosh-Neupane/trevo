@@ -1,15 +1,17 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useMemo } from "react";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useDocument } from "@/lib/hooks/useDocument";
 import { useQuery } from "@tanstack/react-query";
 import { frappeMethod } from "@/lib/frappe/client";
 import { Card } from "@/components/shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { MessageSquare, Paperclip, History, ArrowLeft, Edit } from "lucide-react";
+import { Badge } from "@/components/shadcn/badge";
+import { FormSkeleton } from "@/components/Skeleton";
+import { MessageSquare, Paperclip, History, ArrowLeft } from "lucide-react";
+import DocumentActions from "@/components/DocumentActions";
 
 type DocRow = Record<string, unknown>;
 
@@ -41,14 +43,26 @@ export default function DoctypeDetailPage() {
     staleTime: 60_000,
   });
 
-  if (isLoading) return <div className="p-4 text-sm text-zinc-600">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-600">{error.message}</div>;
-  if (!doc) return <div className="p-4 text-sm text-zinc-600">Document not found</div>;
-
   const fields = (meta?.fields as Array<{ fieldname: string; label?: string; fieldtype: string }> | undefined) ?? [];
   const displayFields = fields.filter(
     (f) => !["Section Break", "Column Break", "Tab Break", "Heading"].includes(f.fieldtype)
   );
+
+  const docstatusValue = doc ? doc.docstatus : null;
+  const docStatusBadge = useMemo(() => {
+    if (docstatusValue === null || docstatusValue === undefined) return null;
+    const statuses: Record<number, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+      0: { label: "Draft", variant: "secondary" },
+      1: { label: "Submitted", variant: "default" },
+      2: { label: "Cancelled", variant: "destructive" },
+    };
+    const s = statuses[docstatusValue as number] ?? { label: "Unknown", variant: "secondary" };
+    return <Badge variant={s.variant}>{s.label}</Badge>;
+  }, [docstatusValue]);
+
+  if (isLoading) return <FormSkeleton />;
+  if (error) return <div className="p-4 text-sm text-red-600">{error.message}</div>;
+  if (!doc) return <div className="p-4 text-sm text-zinc-600">Document not found</div>;
 
   return (
     <div className="space-y-6">
@@ -61,17 +75,14 @@ export default function DoctypeDetailPage() {
             <ArrowLeft className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
           </button>
           <div>
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{doctype}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{doctype}</h1>
+              {docStatusBadge}
+            </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{name}</p>
           </div>
         </div>
-        <Link
-          href={`/desk/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}/edit`}
-          className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          <Edit className="h-4 w-4" />
-          Edit
-        </Link>
+        <DocumentActions doctype={doctype} name={name} onDeleted={() => router.push(`/desk/doctype/${encodeURIComponent(doctype)}`)} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

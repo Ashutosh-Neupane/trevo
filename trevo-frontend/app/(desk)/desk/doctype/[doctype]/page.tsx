@@ -8,6 +8,10 @@ import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useList } from "@/lib/hooks/useList";
 import { useListCount } from "@/lib/hooks/useList";
 import type { FilterOperator } from "@/lib/frappe/types";
+import { Badge } from "@/components/shadcn/badge";
+import { TableSkeleton } from "@/components/Skeleton";
+import ListFilters from "@/components/ListFilters";
+import type { FilterDef } from "@/components/ListFilters";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -23,7 +27,6 @@ export default function DoctypeListView() {
   const [filters, setFilters] = useState<Array<[string, string, FilterOperator, unknown]>>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
 
   const { data: meta } = useDoctype(doctype);
 
@@ -32,6 +35,38 @@ export default function DoctypeListView() {
     if (!fields) return [];
     return fields.filter((f) => f.in_list_view && !["Section Break", "Column Break", "Tab Break", "Heading"].includes(f.fieldtype));
   }, [meta?.fields]);
+
+  const availableFilters: FilterDef[] = useMemo(() => {
+    return listFields
+      .filter((f) => ["Select", "Autocomplete", "Date", "Datetime", "Int", "Float", "Currency"].includes(f.fieldtype))
+      .map((f) => ({
+        fieldname: f.fieldname,
+        label: f.label || f.fieldname,
+        type: f.fieldtype === "Date" || f.fieldtype === "Datetime" ? "date" : f.fieldtype === "Int" || f.fieldtype === "Float" || f.fieldtype === "Currency" ? "number" : f.fieldtype === "Select" || f.fieldtype === "Autocomplete" ? "select" : "text",
+        options: f.fieldtype === "Select" || f.fieldtype === "Autocomplete" ? (f.options || "").split("\n").map((o) => ({ value: o, label: o })).filter(Boolean) : undefined,
+      }));
+  }, [listFields]);
+
+  const stringFilters = useMemo(() => {
+    const result: Record<string, string> = {};
+    for (const f of filters) {
+      if (f[1] && f[3]) result[f[1]] = String(f[3]);
+    }
+    return result;
+  }, [filters]);
+
+  const handleFiltersChange = (newFilters: Record<string, string>) => {
+    const next: Array<[string, string, FilterOperator, unknown]> = [];
+    for (const [fieldname, value] of Object.entries(newFilters)) {
+      if (value) {
+        const field = listFields.find((f) => f.fieldname === fieldname);
+        const op: FilterOperator = field?.fieldtype === "Date" || field?.fieldtype === "Datetime" ? "=" : "like";
+        next.push([doctype, fieldname, op, field?.fieldtype === "Date" || field?.fieldtype === "Datetime" ? value : `%${value}%`]);
+      }
+    }
+    setFilters(next);
+    setPage(0);
+  };
 
   const listParams = useMemo(
     () => ({
@@ -85,6 +120,20 @@ export default function DoctypeListView() {
     return sortOrder === "asc" ? " ↑" : " ↓";
   };
 
+  const renderCell = (row: Record<string, unknown>, field: { fieldname: string; label?: string; fieldtype: string }) => {
+    const value = row[field.fieldname];
+    if (field.fieldname === "docstatus" && typeof value === "number") {
+      const statuses: Record<number, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+        0: { label: "Draft", variant: "secondary" },
+        1: { label: "Submitted", variant: "default" },
+        2: { label: "Cancelled", variant: "destructive" },
+      };
+      const s = statuses[value] ?? { label: "Unknown", variant: "secondary" };
+      return <Badge variant={s.variant}>{s.label}</Badge>;
+    }
+    return String(value ?? "-");
+  };
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -108,16 +157,7 @@ export default function DoctypeListView() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           </div>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-              showFilters
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-300 hover:bg-zinc-50"
-            }`}
-          >
-            Filters
-          </button>
+          <ListFilters filters={stringFilters} onFiltersChange={handleFiltersChange} availableFilters={availableFilters} />
 
           <Link
             href={`/desk/doctype/${encodeURIComponent(doctype)}/new`}
@@ -128,39 +168,13 @@ export default function DoctypeListView() {
         </div>
       </div>
 
-      {/* Filters panel */}
-      {showFilters && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {listFields.slice(0, 4).map((field) => (
-              <div key={field.fieldname}>
-                <label className="mb-1 block text-xs font-medium text-zinc-500">{field.label || field.fieldname}</label>
-                <input
-                  type="text"
-                  placeholder={`Filter ${field.label || field.fieldname}...`}
-                  value={String(filters.find(f => f[1] === field.fieldname)?.[3] ?? "")}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilters(prev => {
-                      const next = prev.filter(f => f[1] !== field.fieldname);
-                      if (val) next.push([doctype, field.fieldname, "like", `%${val}%`]);
-                      return next;
-                    });
-                  }}
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Filters */}
+      <ListFilters filters={stringFilters} onFiltersChange={handleFiltersChange} availableFilters={availableFilters} />
 
       {/* Data table */}
       <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center p-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
-          </div>
+          <TableSkeleton rows={pageSize} cols={listFields.length + 1} />
         ) : rows.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-sm text-zinc-500">No records found.</p>
@@ -246,7 +260,7 @@ export default function DoctypeListView() {
                       </td>
                       {listFields.map((field) => (
                         <td key={field.fieldname} className="px-3 py-3 text-zinc-700 dark:text-zinc-300">
-                          {String(row[field.fieldname] ?? "-")}
+                           {renderCell(row, field as { fieldname: string; label?: string; fieldtype: string })}
                         </td>
                       ))}
                     </tr>

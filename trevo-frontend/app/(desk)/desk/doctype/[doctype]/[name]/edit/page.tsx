@@ -7,6 +7,10 @@ import { useDocument } from "@/lib/hooks/useDocument";
 import { useSaveDocument } from "@/lib/hooks/useDocument";
 import { useCancelDocument } from "@/lib/hooks/useDocument";
 import { useDiscardDocument } from "@/lib/hooks/useDocument";
+import { Badge } from "@/components/shadcn/badge";
+import { FormSkeleton } from "@/components/Skeleton";
+import { ArrowLeft } from "lucide-react";
+import DocumentActions from "@/components/DocumentActions";
 
 export default function DoctypeEditPage() {
   const params = useParams<{ doctype: string; name: string }>();
@@ -20,8 +24,29 @@ export default function DoctypeEditPage() {
   const cancelMutation = useCancelDocument(doctype);
   const discardMutation = useDiscardDocument(doctype);
 
+  const docStatusBadge = (() => {
+    if (!doc) return null;
+    const statuses: Record<number, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+      0: { label: "Draft", variant: "secondary" },
+      1: { label: "Submitted", variant: "default" },
+      2: { label: "Cancelled", variant: "destructive" },
+    };
+    const s = statuses[doc.docstatus as number] ?? { label: "Unknown", variant: "secondary" };
+    return <Badge variant={s.variant}>{s.label}</Badge>;
+  })();
+
+  if (docLoading) {
+    return <FormSkeleton />;
+  }
+
+  if (!doc) {
+    return (
+      <div className="p-6 text-sm text-red-600">Document not found.</div>
+    );
+  }
+
   const handleSave = async (values: Record<string, unknown>) => {
-    await saveMutation.mutateAsync({ doc: values, action: doc?.docstatus === 1 ? "Update" : "Save" });
+    await saveMutation.mutateAsync({ doc: values, action: doc.docstatus === 1 ? "Update" : "Save" });
     router.push(`/desk/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
   };
 
@@ -40,29 +65,25 @@ export default function DoctypeEditPage() {
     router.push(`/desk/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
   };
 
-  if (docLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
-      </div>
-    );
-  }
-
-  if (!doc) {
-    return (
-      <div className="p-6 text-sm text-red-600">Document not found.</div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Edit {doctype}</h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {name} · {doc.docstatus === 0 ? "Draft" : doc.docstatus === 1 ? "Submitted" : "Cancelled"}
-          </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="rounded-lg border border-zinc-300 p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <ArrowLeft className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Edit {doctype}</h1>
+              {docStatusBadge}
+            </div>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{name}</p>
+          </div>
         </div>
+        <DocumentActions doctype={doctype} name={name} onDeleted={() => router.push(`/desk/doctype/${encodeURIComponent(doctype)}`)} />
       </div>
 
       <FormRenderer

@@ -1,0 +1,41 @@
+"use client";
+
+import * as React from "react";
+
+const PopoverContext = React.createContext<{ open: boolean; setOpen: (open: boolean) => void } | null>(null);
+
+function usePopover() {
+  const ctx = React.useContext(PopoverContext);
+  if (!ctx) throw new Error("Popover components must be used within <Popover>");
+  return ctx;
+}
+
+export function Popover({ open, onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: React.ReactNode }) {
+  return (
+    <PopoverContext.Provider value={{ open, setOpen: onOpenChange }}>
+      <div className="relative">{children}</div>
+    </PopoverContext.Provider>
+  );
+}
+
+export function PopoverTrigger({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
+  const { setOpen, open } = usePopover();
+  return (
+    <button type="button" onClick={() => setOpen(!open)} {...props}>
+      {children}
+    </button>
+  );
+}
+
+export function PopoverContent({ children, className = "", align = "start" }: { children: React.ReactNode; className?: string; align?: "start" | "center" | "end" }) {
+  const { open } = usePopover();
+  if (!open) return null;
+
+  const alignClass = align === "end" ? "right-0" : align === "center" ? "left-1/2 -translate-x-1/2" : "left-0";
+
+  return (
+    <div className={`absolute z-50 mt-1 w-80 rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-700 dark:bg-zinc-800 ${alignClass} ${className}`}>
+      {children}
+    </div>
+  );
+}
