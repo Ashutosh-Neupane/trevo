@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import FormRenderer from "@/lib/trevo-form/renderers/FormRenderer";
 import { useDoctype } from "@/lib/hooks/useDoctype";
@@ -22,7 +21,7 @@ export default function DoctypeEditPage() {
   const discardMutation = useDiscardDocument(doctype);
 
   const handleSave = async (values: Record<string, unknown>) => {
-    await saveMutation.mutateAsync({ doc: values, action: "Save" });
+    await saveMutation.mutateAsync({ doc: values, action: doc?.docstatus === 1 ? "Update" : "Save" });
     router.push(`/desk/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
   };
 
@@ -68,11 +67,13 @@ export default function DoctypeEditPage() {
 
       <FormRenderer
         meta={meta!}
+        document={doc}
         editable={true}
         readOnly={doc.docstatus !== 0}
-        onSave={handleSubmit}
+        onSave={handleSave}
+        onSubmit={doc?.docstatus === 0 ? handleSubmit : undefined}
         onCancel={handleCancel}
-        onDiscard={handleDiscard}
+        onDiscard={doc?.docstatus === 0 ? handleDiscard : undefined}
       />
     </div>
   );

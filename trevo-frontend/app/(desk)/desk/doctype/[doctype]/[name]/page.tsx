@@ -1,62 +1,214 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useDocument } from "@/lib/hooks/useDocument";
+import { useQuery } from "@tanstack/react-query";
+import { frappeMethod } from "@/lib/frappe/client";
+import { Card } from "@/components/shadcn/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { MessageSquare, Paperclip, History, ArrowLeft, Edit } from "lucide-react";
+
+type DocRow = Record<string, unknown>;
 
 export default function DoctypeDetailPage() {
   const params = useParams<{ doctype: string; name: string }>();
   const router = useRouter();
   const doctype = decodeURIComponent(params.doctype);
   const name = decodeURIComponent(params.name);
+  const [activeTab, setActiveTab] = useState("details");
 
   const { data: meta } = useDoctype(doctype);
   const { data: doc, isLoading, error } = useDocument(doctype, name);
+
+  const { data: comments } = useQuery({
+    queryKey: ["comments", doctype, name],
+    queryFn: async () => frappeMethod<DocRow[]>("frappe.desk.form.load.get_comments", { doctype, name }),
+    staleTime: 60_000,
+  });
+
+  const { data: versions } = useQuery({
+    queryKey: ["versions", doctype, name],
+    queryFn: async () => frappeMethod<DocRow[]>("frappe.desk.form.load.get_versions", { doctype, name }),
+    staleTime: 60_000,
+  });
+
+  const { data: attachments } = useQuery({
+    queryKey: ["attachments", doctype, name],
+    queryFn: async () => frappeMethod<DocRow[]>("frappe.desk.form.load.get_attachments", { doctype, name }),
+    staleTime: 60_000,
+  });
 
   if (isLoading) return <div className="p-4 text-sm text-zinc-600">Loading...</div>;
   if (error) return <div className="p-4 text-sm text-red-600">{error.message}</div>;
   if (!doc) return <div className="p-4 text-sm text-zinc-600">Document not found</div>;
 
   const fields = (meta?.fields as Array<{ fieldname: string; label?: string; fieldtype: string }> | undefined) ?? [];
+  const displayFields = fields.filter(
+    (f) => !["Section Break", "Column Break", "Tab Break", "Heading"].includes(f.fieldtype)
+  );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">{doctype}</h1>
-          <p className="text-sm text-zinc-600">{doc.name}</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/desk/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(doc.name)}/edit`}
-            className="rounded border px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
-          >
-            Edit
-          </Link>
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => router.push(`/desk/doctype/${encodeURIComponent(doctype)}`)}
-            className="rounded border px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            onClick={() => router.back()}
+            className="rounded-lg border border-zinc-300 p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
           >
-            Back
+            <ArrowLeft className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
           </button>
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{doctype}</h1>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">{name}</p>
+          </div>
         </div>
+        <Link
+          href={`/desk/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}/edit`}
+          className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          <Edit className="h-4 w-4" />
+          Edit
+        </Link>
       </div>
 
-      <div className="rounded border bg-white p-6">
-        <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-          {fields
-            .filter((f) => !["Section Break", "Column Break", "Tab Break", "Heading"].includes(f.fieldtype))
-            .map((f) => (
-              <div key={f.fieldname} className="sm:col-span-1">
-                <dt className="text-sm font-medium text-zinc-500">{f.label || f.fieldname}</dt>
-                <dd className="mt-1 text-sm text-zinc-900">
-                  {doc[f.fieldname] !== undefined ? String(doc[f.fieldname]) : "-"}
-                </dd>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="comments" className="gap-1.5">
+            <MessageSquare className="h-4 w-4" />
+            Comments
+            {comments && comments.length > 0 && (
+              <span className="ml-1 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs dark:bg-zinc-800">
+                {comments.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="attachments" className="gap-1.5">
+            <Paperclip className="h-4 w-4" />
+            Attachments
+            {attachments && attachments.length > 0 && (
+              <span className="ml-1 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs dark:bg-zinc-800">
+                {attachments.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="versions" className="gap-1.5">
+            <History className="h-4 w-4" />
+            Version History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details">
+          <Card className="p-0 overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2">
+              {displayFields.map((f) => (
+                <div key={f.fieldname} className="border-b border-r border-zinc-200 p-4 dark:border-zinc-700 sm:col-span-1">
+                  <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{f.label || f.fieldname}</dt>
+                  <dd className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+                    {doc[f.fieldname] !== undefined && doc[f.fieldname] !== null && doc[f.fieldname] !== ""
+                      ? String(doc[f.fieldname])
+                      : "-"}
+                  </dd>
+                </div>
+              ))}
+            </div>
+            {displayFields.length === 0 && (
+              <div className="p-8 text-center text-sm text-zinc-500">No fields to display.</div>
+            )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="comments">
+          <Card className="p-0 overflow-hidden">
+            {!comments ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
               </div>
-            ))}
-        </dl>
-      </div>
+            ) : comments.length > 0 ? (
+              <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
+                {comments.map((c: DocRow) => (
+                  <div key={c.name as string} className="p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        {(c.comment_by || c.comment_email || "Unknown") as string}
+                      </span>
+                      <span className="text-xs text-zinc-500">{(c.creation ? new Date(c.creation as string).toLocaleString() : "") as string}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{(c.content || c.comment || "-") as string}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-sm text-zinc-500">No comments yet.</div>
+            )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="attachments">
+          <Card className="p-0 overflow-hidden">
+            {!attachments ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
+              </div>
+            ) : attachments.length > 0 ? (
+              <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
+                {attachments.map((a: DocRow) => (
+                  <a
+                    key={a.name as string}
+                    href={a.file_url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Paperclip className="h-4 w-4 text-zinc-400" />
+                      <span className="text-sm text-zinc-900 dark:text-zinc-100">{(a.file_name || a.name) as string}</span>
+                    </div>
+                    {typeof a.file_size === "number" && (
+                      <span className="text-xs text-zinc-500">{Math.round((a.file_size as number) / 1024)} KB</span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-sm text-zinc-500">No attachments.</div>
+            )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="versions">
+          <Card className="p-0 overflow-hidden">
+            {!versions ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
+              </div>
+            ) : versions.length > 0 ? (
+              <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
+                {versions.map((v: DocRow) => (
+                  <div key={v.name as string} className="p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{v.name as string}</span>
+                      <span className="text-xs text-zinc-500">
+                        {v.creation ? new Date(v.creation as string).toLocaleString() : ""}
+                      </span>
+                    </div>
+                    {typeof v.data !== "undefined" && v.data !== null && (
+                      <pre className="mt-2 overflow-x-auto rounded-lg bg-zinc-100 p-3 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                        {typeof v.data === "string" ? (v.data as string) : JSON.stringify(v.data, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-sm text-zinc-500">No version history.</div>
+            )}
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

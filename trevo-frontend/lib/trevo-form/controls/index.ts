@@ -20,3 +20,7 @@ export { default as IntField } from "./IntField";
 export { default as FloatField } from "./FloatField";
 export { default as CurrencyField } from "./CurrencyField";
 export { default as TableField } from "./TableField";
+export { default as HTMLField } from "./HTMLField";
+export { default as CodeField } from "./CodeField";
+export { default as ReadOnlyField } from "./ReadOnlyField";
+export { default as PasswordField } from "./PasswordField";

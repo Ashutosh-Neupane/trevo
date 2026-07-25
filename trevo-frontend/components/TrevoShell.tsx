@@ -2,28 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/frappe/auth";
 import { useUIStore } from "@/lib/stores/ui.store";
+import { useWorkspaces } from "@/lib/hooks/useWorkspaces";
 import CommandPalette from "@/components/CommandPalette";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import {
-  Menu,
-  Bell,
-  Search,
   Moon,
   Sun,
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
-  ChevronRight,
   Home,
   FileText,
   Layout,
   BarChart3,
   Settings,
   Calendar,
-  List,
+  Plus,
 } from "lucide-react";
 
 function NavItem({
@@ -56,11 +53,10 @@ function NavItem({
 
 export default function TrevoShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const router = useRouter();
   const { sidebarOpen, toggleSidebar, theme, setTheme } = useUIStore();
-  const [commandOpen, setCommandOpen] = useState(false);
+  const [, setCommandOpen] = useState(false);
+  const { data: workspaces } = useWorkspaces();
 
-  // Keyboard shortcut for command palette (Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -68,7 +64,6 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
         setCommandOpen(true);
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
@@ -76,7 +71,7 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
   const navItems = [
     { href: "/desk", label: "Dashboard", icon: Home },
     { href: "/desk/doctype", label: "DocTypes", icon: FileText },
-    { href: "/desk/list", label: "List View", icon: List },
+    { href: "/desk/forms", label: "New", icon: Plus },
     { href: "/desk/reports", label: "Reports", icon: BarChart3 },
     { href: "/desk/calendar", label: "Calendar", icon: Calendar },
     { href: "/desk/settings", label: "Settings", icon: Settings },
@@ -158,16 +153,36 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
             sidebarOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full overflow-hidden",
           ].join(" ")}
         >
-          <nav className="flex flex-col gap-1 p-3">
-            {navItems.map((item) => (
-              <NavItem
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-              />
-            ))}
-          </nav>
+          <div className="flex h-full flex-col overflow-y-auto p-3">
+            <nav className="flex flex-col gap-1">
+              {navItems.map((item) => (
+                <NavItem
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                />
+              ))}
+            </nav>
+
+            {workspaces && workspaces.length > 0 && (
+              <>
+                <div className="my-3 border-t border-zinc-200 dark:border-zinc-800" />
+                <div className="mb-2 px-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">Workspaces</div>
+                <nav className="flex flex-col gap-1">
+                  {workspaces.map((ws) => (
+                    <Link
+                      key={ws.name}
+                      href={`/desk/workspace/${encodeURIComponent(ws.name)}`}
+                      className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                    >
+                      {ws.title}
+                    </Link>
+                  ))}
+                </nav>
+              </>
+            )}
+          </div>
         </aside>
 
         {/* Main content */}

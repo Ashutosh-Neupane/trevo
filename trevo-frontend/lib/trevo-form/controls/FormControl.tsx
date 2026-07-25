@@ -1,7 +1,6 @@
 "use client";
 
 import { memo } from "react";
-import type { DocField } from "@/lib/frappe/types";
 import type { FieldControlProps } from "./index";
 import FormField from "./FormField";
 import SelectField from "./SelectField";
@@ -15,6 +14,10 @@ import TextEditorField from "./TextEditorField";
 import LinkField from "./LinkField";
 import AttachmentField from "./AttachmentField";
 import TableField from "./TableField";
+import HTMLField from "./HTMLField";
+import CodeField from "./CodeField";
+import ReadOnlyField from "./ReadOnlyField";
+import PasswordField from "./PasswordField";
 
 /**
  * FieldControl — dispatches to the appropriate field component based on fieldtype.
@@ -62,6 +65,14 @@ function FieldControl({
         return <AttachmentField {...props} />;
       case "Table":
         return <TableField {...props} />;
+      case "HTML":
+        return <HTMLField {...props} />;
+      case "Code":
+        return <CodeField {...props} />;
+      case "Read Only":
+        return <ReadOnlyField {...props} />;
+      case "Password":
+        return <PasswordField {...props} />;
       default:
         return <FormField {...props} />;
     }

@@ -5,6 +5,11 @@ import { useReportsList, useReport } from "@/lib/hooks/useReport";
 import { Card } from "@/components/shadcn/card";
 import { BarChart3, Play, RefreshCw } from "lucide-react";
 
+interface ReportColumn {
+  fieldname: string;
+  label: string;
+}
+
 export default function ReportsPage() {
   const { data: reports, isLoading: reportsLoading } = useReportsList();
   const [selectedReport, setSelectedReport] = useState<string>("");
@@ -21,24 +26,26 @@ export default function ReportsPage() {
       }));
   }, [reports]);
 
-  const columns = useMemo(() => {
+  const columns: ReportColumn[] = useMemo(() => {
     if (!reportData?.columns || !Array.isArray(reportData.columns)) return [];
-    if (reportData.columns.length > 0 && typeof reportData.columns[0] === "string") {
-      return reportData.columns.map((col) => ({ fieldname: col, label: col }));
+    const raw = reportData.columns;
+    if (raw.length === 0) return [];
+    if (typeof raw[0] === "string") {
+      return raw.map((col) => ({ fieldname: col as string, label: col as string }));
     }
-    if (reportData.columns.length > 0 && typeof reportData.columns[0] === "object") {
-      return reportData.columns as Array<{ fieldname?: string; label?: string; [key: string]: unknown }>;
-    }
-    return [];
+    return raw.map((col) => ({
+      fieldname: (col as { fieldname?: string }).fieldname ?? String(col),
+      label: (col as { label?: string }).label ?? String(col),
+    }));
   }, [reportData]);
 
   const rows = useMemo(() => {
     if (!reportData?.result || !Array.isArray(reportData.result)) return [];
-    return reportData.result;
+    return reportData.result as Array<Record<string, unknown>>;
   }, [reportData]);
 
-  const getColumnValue = (row: Record<string, unknown>, col: { fieldname?: string; label?: string }) => {
-    const key = col.fieldname ?? col.label ?? "";
+  const getColumnValue = (row: Record<string, unknown>, col: ReportColumn) => {
+    const key = col.fieldname;
     return row[key] !== undefined ? String(row[key]) : "-";
   };
 
@@ -52,13 +59,13 @@ export default function ReportsPage() {
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
             <label className="mb-1 block text-xs font-medium text-zinc-500">Report</label>
-              <select
-                value={selectedReport}
-                onChange={(e) => {
-                  setSelectedReport(e.target.value);
-                }}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-              >
+            <select
+              value={selectedReport}
+              onChange={(e) => {
+                setSelectedReport(e.target.value);
+              }}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+            >
               <option value="">Select a report</option>
               {reportsLoading ? (
                 <option disabled>Loading...</option>
@@ -107,10 +114,10 @@ export default function ReportsPage() {
                 <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
                   {columns.map((col) => (
                     <th
-                      key={col.fieldname ?? col.label}
+                      key={col.fieldname}
                       className="px-4 py-2 text-left text-xs font-medium text-zinc-500"
                     >
-                      {col.label || col.fieldname}
+                      {col.label}
                     </th>
                   ))}
                 </tr>
@@ -123,10 +130,10 @@ export default function ReportsPage() {
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row: Record<string, unknown>, idx: number) => (
-                    <tr key={idx} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                  rows.map((row, idx) => (
+                    <tr key={String(row.__name || idx)} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                       {columns.map((col) => (
-                        <td key={col.fieldname ?? col.label} className="px-4 py-2 text-zinc-700 dark:text-zinc-300">
+                        <td key={col.fieldname} className="px-4 py-2 text-zinc-700 dark:text-zinc-300">
                           {getColumnValue(row, col)}
                         </td>
                       ))}

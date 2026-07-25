@@ -1,37 +1,59 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import type { FieldControlProps } from "./index";
+import FormControl from "./FormControl";
+import { fetchDoctypeMetaClient } from "@/lib/frappe/doctype";
+import type { DocTypeMeta, DocField } from "@/lib/frappe/types";
+import { Plus, Trash2 } from "lucide-react";
 
-/**
- * Table field — inline editable child table with CRUD operations.
- * Supports add/remove rows, inline editing, and drag-to-reorder (simplified).
- */
 export default function TableField({ field, value, onChange, disabled }: FieldControlProps) {
-  const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
+  const rows = useMemo(() => {
+    return Array.isArray(value) ? value : [];
+  }, [value]);
+  const childDoctype = typeof field.options === "string" ? field.options : "";
+
+  const [meta, setMeta] = useState<DocTypeMeta | null>(null);
+
+  useEffect(() => {
+    if (!childDoctype) return;
+    let cancelled = false;
+    fetchDoctypeMetaClient(childDoctype)
+      .then((m) => { if (!cancelled) setMeta(m); })
+      .catch(() => { if (!cancelled) setMeta(null); });
+    return () => { cancelled = true; };
+  }, [childDoctype]);
+
+  const childFields = useMemo(() => {
+    if (!meta?.fields) return [];
+    return meta.fields.filter(
+      (f: DocField) =>
+        !["Section Break", "Column Break", "Tab Break", "Heading", "Table", "Read Only", "Button", "HTML"].includes(f.fieldtype) &&
+        !f.hidden,
+    );
+  }, [meta]);
 
   const addRow = useCallback(() => {
-    const newRow: Record<string, unknown> = {
-      name: `new-${Date.now()}`,
-      idx: rows.length,
-    };
-    setRows([...rows, newRow]);
+    const newRow: Record<string, unknown> = { name: `new-${Date.now()}`, idx: rows.length };
     onChange([...rows, newRow]);
   }, [rows, onChange]);
 
   const removeRow = useCallback((index: number) => {
-    const updated = rows.filter((_, i) => i !== index);
-    setRows(updated);
-    onChange(updated);
+    onChange(rows.filter((_, i) => i !== index));
   }, [rows, onChange]);
 
   const updateRow = useCallback((index: number, key: string, val: unknown) => {
     const updated = rows.map((r, i) => (i === index ? { ...r, [key]: val } : r));
-    setRows(updated);
     onChange(updated);
   }, [rows, onChange]);
 
-  if (!field.options) return null;
+  if (!childDoctype) {
+    return (
+      <div className="text-sm text-zinc-500">
+        No child DocType configured. Set the Options field to a valid DocType.
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -39,16 +61,14 @@ export default function TableField({ field, value, onChange, disabled }: FieldCo
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 dark:bg-zinc-800">
             <tr>
-              {field.columns && (
-                <th className="px-3 py-2 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400">#</th>
-              )}
-              {Object.keys(rows[0] || {}).map((key) => (
-                <th key={key} className="px-3 py-2 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  {key}
+              <th className="w-10 px-3 py-2 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400">#</th>
+              {childFields.map((f) => (
+                <th key={f.fieldname} className="px-3 py-2 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                  {f.label || f.fieldname}
                 </th>
               ))}
               {!disabled && (
-                <th className="px-3 py-2 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <th className="w-20 px-3 py-2 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   Actions
                 </th>
               )}
@@ -57,24 +77,21 @@ export default function TableField({ field, value, onChange, disabled }: FieldCo
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={100} className="px-3 py-8 text-center text-sm text-zinc-500">
-                  No rows. Click "Add Row" to add one.
+                <td colSpan={childFields.length + (disabled ? 1 : 2)} className="px-3 py-8 text-center text-sm text-zinc-500">
+                  No rows. Click Add Row to add one.
                 </td>
               </tr>
             ) : (
               rows.map((row, i) => (
-                <tr key={i} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                  {field.columns && (
-                    <td className="px-3 py-2 text-sm text-zinc-500">{i + 1}</td>
-                  )}
-                  {Object.entries(row).map(([key, val]) => (
-                    <td key={key} className="px-3 py-2">
-                      <input
-                        type="text"
-                        value={String(val ?? "")}
-                        onChange={(e) => updateRow(i, key, e.target.value)}
-                        disabled={disabled}
-                        className="w-full rounded border border-zinc-200 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+                <tr key={String(row.name) || i} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                  <td className="px-3 py-2 text-sm text-zinc-500">{i + 1}</td>
+                  {childFields.map((f) => (
+                    <td key={f.fieldname} className="px-3 py-2">
+                      <FormControl
+                        field={f}
+                        value={row[f.fieldname]}
+                        onChange={(val) => updateRow(i, f.fieldname, val)}
+                        disabled={!!disabled}
                       />
                     </td>
                   ))}
@@ -83,9 +100,10 @@ export default function TableField({ field, value, onChange, disabled }: FieldCo
                       <button
                         type="button"
                         onClick={() => removeRow(i)}
-                        className="text-xs text-red-600 hover:text-red-700"
+                        className="text-zinc-400 hover:text-red-600"
+                        title="Remove row"
                       >
-                        Remove
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </td>
                   )}
@@ -101,9 +119,10 @@ export default function TableField({ field, value, onChange, disabled }: FieldCo
           <button
             type="button"
             onClick={addRow}
-            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            className="flex items-center gap-1 text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
-            + Add Row
+            <Plus className="h-4 w-4" />
+            Add Row
           </button>
         </div>
       )}
