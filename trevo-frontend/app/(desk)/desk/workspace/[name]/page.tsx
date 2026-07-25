@@ -171,9 +171,9 @@ export default function WorkspacePage() {
                       </div>
                     </div>
                     {chart.chart_type === "line" && chart.source_doctype ? (
-                      <ChartRenderer chart={chart as Parameters<typeof ChartRenderer>[0]} />
+                      <ChartRenderer chart={chart} />
                     ) : chart.chart_type === "bar" && chart.source_doctype ? (
-                      <ChartRenderer chart={chart as Parameters<typeof ChartRenderer>[0]} />
+                      <ChartRenderer chart={chart} />
                     ) : (
                       <div className="rounded-lg border border-dashed border-zinc-200 p-6 text-center dark:border-zinc-700">
                         <p className="text-xs text-zinc-500">Chart rendering coming soon</p>
@@ -266,7 +266,7 @@ function CountQuery({ chart }: { chart: { doctype?: string; function?: string; a
   );
 }
 
-function ChartRenderer({ chart }: { chart: { chart_type?: string; source_doctype?: string; x_field?: string; y_field?: string; filters?: string } }) {
+function ChartRenderer({ chart }: { chart: { chart_type?: string; source_doctype?: string; x_field?: string; y_field?: string; filters?: string } & Record<string, unknown> }) {
   const reportName = `${chart.source_doctype || "unknown"}_chart`;
   const { data, isLoading, error } = useReport(reportName);
 
