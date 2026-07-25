@@ -1,6 +1,6 @@
 # Trevo — Frappe Headless Frontend
 
-> Modern Next.js frontend for Frappe. Source of truth = live backend at `localhost:8080`.
+> Modern Next.js frontend for Frappe. Source of truth = live backend at `localhost:8000`.
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### Architecture
 - **Next.js 16** app with App Router, TypeScript, Tailwind CSS v4.
-- **BFF proxy pattern**: browser → `/api/frappe/*` → Frappe. No direct `:8080` calls from client.
+- **BFF proxy pattern**: browser → `/api/frappe/*` → Frappe. No direct `:8000` calls from client.
 - **sid re-issue on Next domain**: fixes cross-origin cookie issue from Frappe's SameSite=Lax.
 - **Auth guard middleware**: redirects unauthenticated users to `/login`.
 - **React Compiler** compatible: manual memoization preserved, no skipped optimizations.
@@ -98,13 +98,13 @@
 - [ ] **Frappe bench app**: move custom trial/billing logic out of frontend into a proper bench app if needed
 - [ ] **Environment config**: NEXT_PUBLIC_FRAPPE_BASE_URL, FRAPPE_BACKEND_URL, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 - [ ] **Docker / deploy config**: vercel.json or Dockerfile
-- [ ] **E2E tests**: Playwright against localhost:8080
+- [ ] **E2E tests**: Playwright against localhost:8000
 
 ---
 
 ## 🔑 Key design decisions
-1. **BFF proxy** — browser → `/api/frappe/*` → Frappe. No direct :8080 calls.
-2. **sid re-issued on Next domain** — Frappe sets SameSite=Lax on :8080; we re-issue on :3000.
+1. **BFF proxy** — browser → `/api/frappe/*` → Frappe. No direct :8000 calls.
+2. **sid re-issued on Next domain** — Frappe sets SameSite=Lax on :8000; we re-issue on :3000.
 3. **savedocs for Save/Submit** — the real Frappe desk path, runs server-side hooks.
 4. **React Compiler** — manual memoization preserved, no skipped optimizations.
 5. **Form renderer is headless-CMS ready** — accepts raw Frappe documents or empty meta, dynamically renders any DocType.

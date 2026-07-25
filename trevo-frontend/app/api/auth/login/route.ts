@@ -3,7 +3,7 @@
  *
  * Proxies Frappe /api/method/login, then RE-ISSUES the `sid` cookie on the
  * Next.js domain (localhost:3000). This is critical: Frappe sets `sid` with
- * SameSite=Lax on its own origin (localhost:8080), which the browser will NOT
+ * SameSite=Lax on its own origin (localhost:8000), which the browser will NOT
  * send back to localhost:3000. By re-issuing it on our domain, every subsequent
  * /api/frappe/* and /api/boot request carries the session.
  */

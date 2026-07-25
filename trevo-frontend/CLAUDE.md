@@ -24,9 +24,9 @@ trevo-frontend/
 └── middleware.ts      NEEDS CREATE (auth guard)
 ```
 
-## VERIFIED BACKEND CONTRACT (localhost:8080, curl-tested — DO NOT re-verify)
+## VERIFIED BACKEND CONTRACT (localhost:8000, curl-tested — DO NOT re-verify)
 - **Creds:** Administrator / admin
-- **Login:** `POST /api/method/login {usr,pwd}` → `{message:"Logged In",home_page,full_name}`, sets `sid` (HttpOnly, SameSite=Lax, domain=:8080)
+- **Login:** `POST /api/method/login {usr,pwd}` → `{message:"Logged In",home_page,full_name}`, sets `sid` (HttpOnly, SameSite=Lax, domain=:8000)
 - **get_bootinfo → 403 NOT whitelisted.** BFF `/api/boot` assembles it: get_logged_user + resource/User/:email + frappe.apps.get_apps
 - **Workspace sidebar:** `frappe.desk.desktop.get_workspace_sidebar_items` → `{message:{pages:[...]}}`. **Key is `pages` NOT `workspaces`.** Each item: name,title,icon,indicator_color,parent_page,public,is_hidden
 - **Workspace detail:** `resource/Workspace/:name` → shortcuts[],links[],charts[],number_cards[]. Links carry `link_type`(DocType/Report) AND `type`, plus `link_count`
@@ -39,8 +39,8 @@ trevo-frontend/
 - **get_doc_info:** `frappe.desk.form.load.get_doc_info {doctype,name}` → `{docinfo:{comments,attachments,versions,...}}`
 
 ## ARCHITECTURE (locked decisions)
-1. **BFF proxy** — browser → `/api/frappe/*` route → Frappe. Never call :8080 from browser (CORS).
-2. **sid re-issued on Next domain** — Frappe sets sid on :8080 (SameSite=Lax won't cross to :3000). Login route re-issues it HttpOnly on localhost:3000 so every Next request carries it. See `app/api/auth/login/route.ts`.
+1. **BFF proxy** — browser → `/api/frappe/*` route → Frappe. Never call :8000 from browser (CORS).
+2. **sid re-issued on Next domain** — Frappe sets sid on :8000 (SameSite=Lax won't cross to :3000). Login route re-issues it HttpOnly on localhost:3000 so every Next request carries it. See `app/api/auth/login/route.ts`.
 3. **savedocs** for form Save/Submit/Cancel.
 4. **SSR** — pages are RSC: fetch meta+data server-side via frappeServerFetch(cookie), pass to client components for interactivity.
 
@@ -76,6 +76,6 @@ Next 16 App Router, React 19, TS, Tailwind v4 (`@import "tailwindcss"` in global
 - `lib/frappe/{document,list}.ts` server params type too narrow — widen to `Record<string, string|number|boolean|undefined|null|object>`.
 
 ## ENV
-`.env.local`: `NEXT_PUBLIC_FRAPPE_BASE_URL=http://localhost:8080`. Add `FRAPPE_BACKEND_URL=http://localhost:8080` (server-side, used by lib/frappe/server.ts — already defaults correctly).
+`.env.local`: `NEXT_PUBLIC_FRAPPE_BASE_URL=http://localhost:8000`. Add `FRAPPE_BACKEND_URL=http://localhost:8000` (server-side, used by lib/frappe/server.ts — already defaults correctly).
 
 See RECAP.md for detailed done/pending status.

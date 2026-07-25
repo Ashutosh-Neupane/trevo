@@ -80,7 +80,7 @@
 - **Login**: POST `/api/method/login` `{usr, pwd}` → `{message, homePage, fullName}`.
 - **Logout**: POST `/api/method/logout` → clears session.
 - **File upload**: POST `/api/method/upload_file` → multipart FormData.
-- **Boot info**: `frappe.boot.getBootInfo` exists but is NOT whitelisted (verified 403 on :8080).
+- **Boot info**: `frappe.boot.getBootInfo` exists but is NOT whitelisted (verified 403 on :8000).
 
 ### Realtime / websockets
 - **`frappe/realtime/__init__.py`**: `publishRealtime(event, message, room, user, doctype, docname, taskId, afterCommit)` → Redis pub/sub.
@@ -107,7 +107,7 @@
   - `search.py` → `searchLink` (Link autocomplete), `searchWidget` (global search).
   - `treeview.py` → hierarchical tree.
   - `dashboardChart/`, `numberCard/` → dashboard widgets.
-- **Workspace backend**: `frappe.desk.desktop.getWorkspaceSidebarItems()` → `{message: {pages: [...]}}` (key is `pages`, not `workspaces` — verified on :8080).
+- **Workspace backend**: `frappe.desk.desktop.getWorkspaceSidebarItems()` → `{message: {pages: [...]}}` (key is `pages`, not `workspaces` — verified on :8000).
 - **DocInfo / Timeline**: `frappe.desk.form.load.getDocInfo(doc)` returns `{comments, attachments, assignments, versions, tags, workflowState, lastModified}`. Realtime events: `docinfoUpdate`, `newComment`.
 
 ---
@@ -196,7 +196,7 @@ trevo-frontend/
 │   │   ├── desk.store.ts            # recentDocs, activeWorkspace
 │   │   └── ui.store.ts              # sidebarOpen, theme (persisted)
 │   └── utils.ts                     # cn(), date/number formatting
-├── .env.local                        # FRAPPE_BASE_URL=http://localhost:8080
+├── .env.local                        # FRAPPE_BASE_URL=http://localhost:8000
 ├── package.json
 ├── next.config.ts
 └── tsconfig.json
@@ -220,7 +220,7 @@ trevo-frontend/
 - **Dedicated doctype routes**: Scoped paths at `app/api/doctype/[doctype]/...`.
 - **Server-side fetch** (`lib/frappe/server.ts`): `frappeServerFetch<T>()` used by RSC and route handlers. `getCookieHeader()` from `next/headers`. JSON-stringifies query params. Throws `FrappeError` on non-2xx. `ServerFetchOptions` supports `params`, `body`, `rawBody`, `contentType`, `headers`, `throwOnError`.
 
-#### DocType meta & CRUD (verified end-to-end with Frappe at :8080)
+#### DocType meta & CRUD (verified end-to-end with Frappe at :8000)
 - **DocType browser** (`app/(desk)/desk/doctype/page.tsx`): RSC. `api/resource/DocType` with `istable=0, issingle=0`. Up to 200 doctypes. Table with name, module, View link.
 - **List view** (`app/(desk)/desk/doctype/[doctype]/page.tsx`): Client. Parallel: `frappe.desk.query.getList({doctype, fields:["name"], limit:20})` + `frappe.client.getMeta({doctype})`. Renders first 20 name rows. Click navigates to detail.
 - **Create form** (`app/(desk)/desk/doctype/[doctype]/new/page.tsx`): Client. Fetches meta from `/api/doctype/[doctype]/meta`. Filters structural types: `Section Break`, `Column Break`, `Tab Break`, `Heading`, `Read Only`, `Button`. Renders `<input type="text">` for every remaining field. Applies `default` from meta. Saves via `/api/doctype/[doctype]/save` POST → `frappe.desk.form.save.savedocs({doctype, ...form, action:"Save"})`. Navigates to detail on success.
@@ -266,7 +266,7 @@ Next.js BFF (app/api/*)
   │  reads `sid` via next/headers cookies()
   │  forwards as Cookie: sid=...
   ▼
-Frappe (localhost:8080)
+Frappe (localhost:8000)
   │  LoginManager validates session
   │  executes whitelisted method / REST
   │  returns {message: ...} or {data: ...}
@@ -306,7 +306,7 @@ Frappe DB / Redis
   - `trevo-frontend/app/(desk)/desk/layout.tsx`
 - ✅ Auth state provider (React Context)
   - `trevo-frontend/lib/frappe/auth.tsx`
-- ✅ Typed API contract (~453 lines, empirically verified against :8080)
+- ✅ Typed API contract (~453 lines, empirically verified against :8000)
   - `trevo-frontend/lib/frappe/types.ts`
 - ✅ Axios client (browser → BFF, envelope unwrap, 401/403 redirect)
   - `trevo-frontend/lib/frappe/client.ts`
@@ -422,7 +422,7 @@ Frappe DB / Redis
   - `trevo-frontend/app/(desk)/desk/layout.tsx`
 - ✅ Auth state provider (React Context)
   - `trevo-frontend/lib/frappe/auth.tsx`
-- ✅ Typed API contract (~453 lines, empirically verified against :8080)
+- ✅ Typed API contract (~453 lines, empirically verified against :8000)
   - `trevo-frontend/lib/frappe/types.ts`
 - ✅ Axios client (browser → BFF, envelope unwrap, 401/403 redirect)
   - `trevo-frontend/lib/frappe/client.ts`
