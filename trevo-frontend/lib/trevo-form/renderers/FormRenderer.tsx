@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import type { DocTypeMeta, DocField, FrappeDocument } from "@/lib/frappe/types";
 import type { TrevoDocument } from "../types";
 import { parseDoctypeMeta } from "../meta/parseDoctypeMeta";
@@ -11,7 +11,7 @@ import { validateFields } from "../validation";
 
 interface FormRendererProps {
   meta: DocTypeMeta | null | undefined;
-  document?: TrevoDocument | FrappeDocument | null;
+  doc?: TrevoDocument | FrappeDocument | null;
   editable?: boolean;
   readOnly?: boolean;
   onChange?: (values: Record<string, unknown>) => void;
@@ -24,7 +24,7 @@ interface FormRendererProps {
 
 export default function FormRenderer({
   meta,
-  document,
+  doc,
   editable = true,
   readOnly = false,
   onChange,
@@ -40,16 +40,16 @@ export default function FormRenderer({
     return parseDoctypeMeta(meta);
   }, [meta]);
 
-  const isReadOnly = Boolean(readOnly || (document && typeof document === "object" && "docstatus" in document && document.docstatus !== 0 && document.docstatus !== undefined));
+  const isReadOnly = Boolean(readOnly || (doc && typeof doc === "object" && "docstatus" in doc && doc.docstatus !== 0 && doc.docstatus !== undefined));
 
   const formValues = useMemo(() => {
-    if (!document) {
+    if (!doc) {
       return fields.reduce<Record<string, unknown>>((acc, f) => ({ ...acc, [f.fieldname]: f.default ?? "" }), {});
     }
-    if ("values" in document && document.values) {
-      return document.values as Record<string, unknown>;
+    if ("values" in doc && doc.values) {
+      return doc.values as Record<string, unknown>;
     }
-    const raw = document as FrappeDocument;
+    const raw = doc as FrappeDocument;
     const vals: Record<string, unknown> = {};
     for (const key of Object.keys(raw)) {
       if (!["name", "doctype", "owner", "creation", "modified", "modified_by", "parent", "parenttype", "parentfield", "idx", "docstatus", "__islocal", "__unsaved"].includes(key)) {
@@ -57,9 +57,14 @@ export default function FormRenderer({
       }
     }
     return vals;
-  }, [document, fields]);
+  }, [doc, fields]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [lastSavedValues, setLastSavedValues] = useState<string>("");
+  const isDirty = useMemo(() => {
+    const current = JSON.stringify(formValues);
+    return current !== lastSavedValues;
+  }, [formValues, lastSavedValues]);
 
   const handleFieldChange = (fieldname: string, value: unknown) => {
     const next = { ...formValues, [fieldname]: value };
@@ -83,13 +88,44 @@ export default function FormRenderer({
     if (!runValidation()) return;
     const next = { ...formValues };
     await onSave?.(next);
+    setLastSavedValues(JSON.stringify(next));
   }, [runValidation, onSave, formValues]);
 
   const handleSubmit = useCallback(async () => {
     if (!runValidation()) return;
     const next = { ...formValues };
     await onSubmit?.(next);
+    setLastSavedValues(JSON.stringify(next));
   }, [runValidation, onSubmit, formValues]);
+
+  useEffect(() => {
+    if (!onSave || !editable || isReadOnly) return;
+
+    const handler = (e: KeyboardEvent) => {
+      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes((window.document.activeElement as HTMLElement | null)?.tagName ?? "");
+      if ((e.metaKey || e.ctrlKey) && e.key === "s" && !isInput) {
+        e.preventDefault();
+        if (runValidation()) {
+          void handleSave();
+        }
+      }
+    };
+
+    window.document.addEventListener("keydown", handler);
+    return () => window.document.removeEventListener("keydown", handler);
+  }, [onSave, editable, isReadOnly, runValidation, handleSave]);
+
+  useEffect(() => {
+    if (!onSave || !editable || isReadOnly || !isDirty) return;
+
+    const interval = setInterval(() => {
+      if (runValidation()) {
+        void handleSave();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [onSave, editable, isReadOnly, isDirty, runValidation, handleSave]);
 
   const renderSection = (section: typeof sections[0]) => {
     const isCollapsed = store.collapsedSections.has(section.fieldname);

@@ -88,7 +88,7 @@ export default function DoctypeEditPage() {
 
       <FormRenderer
         meta={meta!}
-        document={doc}
+        doc={doc}
         editable={true}
         readOnly={doc.docstatus !== 0}
         onSave={handleSave}
