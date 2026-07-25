@@ -3,15 +3,18 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Download } from "lucide-react";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useList } from "@/lib/hooks/useList";
 import { useListCount } from "@/lib/hooks/useList";
 import type { FilterOperator } from "@/lib/frappe/types";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import { TableSkeleton } from "@/components/Skeleton";
 import ListFilters from "@/components/ListFilters";
 import type { FilterDef } from "@/components/ListFilters";
+import { exportToCSV, exportToJSON } from "@/lib/frappe/export";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -27,6 +30,7 @@ export default function DoctypeListView() {
   const [filters, setFilters] = useState<Array<[string, string, FilterOperator, unknown]>>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
 
   const { data: meta } = useDoctype(doctype);
 
@@ -115,6 +119,15 @@ export default function DoctypeListView() {
     refetch();
   };
 
+  const handleExportCSV = () => {
+    const cols = listFields.map((f) => ({ fieldname: f.fieldname, label: f.label || undefined }));
+    exportToCSV(rows, cols, `${doctype}_export.csv`);
+  };
+
+  const handleExportJSON = () => {
+    exportToJSON(rows, `${doctype}_export.json`);
+  };
+
   const SortIcon = ({ field }: { field: string }) => {
     if (sortBy !== field) return null;
     return sortOrder === "asc" ? " ↑" : " ↓";
@@ -159,6 +172,23 @@ export default function DoctypeListView() {
 
           <ListFilters filters={stringFilters} onFiltersChange={handleFiltersChange} availableFilters={availableFilters} />
 
+          <DropdownMenu open={exportOpen} onOpenChange={setExportOpen}>
+            <DropdownMenuTrigger>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                Export JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Link
             href={`/desk/doctype/${encodeURIComponent(doctype)}/new`}
             className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
@@ -167,9 +197,6 @@ export default function DoctypeListView() {
           </Link>
         </div>
       </div>
-
-      {/* Filters */}
-      <ListFilters filters={stringFilters} onFiltersChange={handleFiltersChange} availableFilters={availableFilters} />
 
       {/* Data table */}
       <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden">

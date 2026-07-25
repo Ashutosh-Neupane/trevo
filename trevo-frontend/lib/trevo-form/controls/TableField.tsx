@@ -34,7 +34,7 @@ export default function TableField({ field, value, onChange, disabled }: FieldCo
   }, [meta]);
 
   const addRow = useCallback(() => {
-    const newRow: Record<string, unknown> = { name: `new-${Date.now()}`, idx: rows.length };
+    const newRow: Record<string, unknown> = { idx: rows.length };
     onChange([...rows, newRow]);
   }, [rows, onChange]);
 
