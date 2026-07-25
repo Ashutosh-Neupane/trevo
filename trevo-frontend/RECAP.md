@@ -32,6 +32,7 @@
 - `report.ts` — runReport, fetchReportMeta
 - `boot.ts` — assembleBootInfo (composes user + apps since `get_bootinfo` is 403)
 - `maps.ts` — Google Maps script loader for Geolocation field
+- `export.ts` — CSV/JSON export utilities
 
 ### State & Data layer
 - **Zustand stores**: `auth.store.ts` (user, bootInfo), `ui.store.ts` (sidebar, theme), `desk.store.ts` (recent docs)
@@ -41,26 +42,30 @@
 - `login/page.tsx` — email/password auth with error handling
 - `desk/page.tsx` — dashboard with stat cards (Sales Order, Customer, Sales Invoice, Payment Entry) + workspace cards
 - `desk/doctype/page.tsx` — all DocType list
-- `desk/doctype/[doctype]/page.tsx` — list view with sorting, pagination, filters, bulk delete, proper meta-driven columns
-- `desk/doctype/[doctype]/[name]/page.tsx` — detail view with tabs: Details, Comments, Attachments, Version History
-- `desk/doctype/[doctype]/[name]/edit/page.tsx` — edit form withSave/Submit/Discard/Cancel actions
+- `desk/doctype/[doctype]/page.tsx` — list view with sorting, pagination, filters, bulk delete, proper meta-driven columns, status badges, export CSV/JSON, skeleton loading
+- `desk/doctype/[doctype]/[name]/page.tsx` — detail view with tabs: Details, Comments, Attachments, Version History, DocStatus badge, DocumentActions menu
+- `desk/doctype/[doctype]/[name]/edit/page.tsx` — edit form with Save/Submit/Discard/Cancel actions, DocumentActions menu, DocStatus badge, FormSkeleton loading
 - `desk/doctype/[doctype]/new/page.tsx` — new document form
-- `desk/workspace/[name]/page.tsx` — workspace shortcuts, links, number cards, charts placeholders
+- `desk/workspace/[name]/page.tsx` — workspace shortcuts, links, number cards with live counts, charts with recharts
 - `desk/forms/page.tsx` — searchable New Document selector
 - `desk/reports/page.tsx` — report runner with results table
-- `desk/calendar/page.tsx` — month-grid calendar navigation
+- `desk/calendar/page.tsx` — month-grid calendar with Event/Task integration
 - `desk/tasks/page.tsx` — Task list view
 - `desk/settings/page.tsx` — profile + system settings from boot info
 - `desk/list/page.tsx` — quick links to key DocTypes
+- `desk/not-found.tsx` — styled 404 page
 
 ### Components
-- `TrevoShell.tsx` — header, collapsible sidebar with dynamic workspace items, theme toggle, command palette trigger, user menu
-- `CommandPalette.tsx` — Ctrl+K palette with quick actions, workspace search, theme switcher
-- `NotificationsPanel.tsx` — notification dropdown
+- `TrevoShell.tsx` — header, collapsible sidebar with dynamic workspace items, theme toggle, command palette trigger, user menu, breadcrumbs
+- `CommandPalette.tsx` — Ctrl+K palette with quick actions, workspace search, theme switcher, global search results
+- `NotificationsPanel.tsx` — notification dropdown with unread count, mark-read, time-ago formatting
+- `DocumentActions.tsx` — dropdown menu with Print, Email, Share, Delete
+- `ListFilters.tsx` — popover-based filter panel with text/select/date/number inputs
 - `Breadcrumbs.tsx` — path-aware breadcrumbs in shell
 - `Skeleton.tsx` — `Skeleton`, `FormSkeleton`, `TableSkeleton`, `CardSkeleton`, `DashboardSkeleton`
 - `ErrorBoundary.tsx`
-- `shadcn/card.tsx`, `shadcn/button.tsx`, `shadcn/input.tsx`, `shadcn/label.tsx`, `shadcn/badge.tsx`, `shadcn/tabs.tsx`, `shadcn/select.tsx` — minimal primitives
+- `shadcn/card.tsx`, `shadcn/button.tsx`, `shadcn/input.tsx`, `shadcn/label.tsx`, `shadcn/badge.tsx`, `shadcn/tabs.tsx`, `shadcn/select.tsx`, `shadcn/dialog.tsx`, `shadcn/dropdown-menu.tsx`, `shadcn/popover.tsx`, `shadcn/tooltip.tsx`, `shadcn/avatar.tsx`, `shadcn/checkbox.tsx`, `shadcn/textarea.tsx`, `shadcn/scroll-area.tsx`, `shadcn/separator.tsx`, `shadcn/slot.tsx`
+- `charts.tsx` — `BarChartComponent`, `LineChartComponent`, `PieChartComponent` via recharts
 
 ### Dynamic form system (`lib/trevo-form/`)
 - `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents, includes client-side validation before save
@@ -75,24 +80,20 @@
 ## ⏳ REMAINING
 
 ### Must-have for production parity
-- [ ] **Dynamic Link field**: fully dynamic doctype resolution from another field value in search
 - [ ] **Child table save backend**: ensure `savedocs` correctly serializes nested child table arrays with parent/child DocType relationships
 - [ ] **List view filters**: proper date-range, numeric-range, link filters with operator selectors
-- [ ] **List view export**: CSV/Excel export via Frappe API
-- [ ] **Document actions**: Print, Email, Share, Delete with proper Frappe method calls
-- [ ] **Loading skeletons**: replace spinners with skeleton loaders in list/detail/reports pages
-- [ ] **Status / DocStatus badges**: render visual badges for Draft, Submitted, Cancelled, etc.
+- [ ] **Form validation**: client-side validation using Frappe meta (mandatory, regex, min/max) before save — partially implemented, needs field-level error display
+- [ ] **Document actions**: Print, Email, Share, Delete with proper Frappe method calls — menu exists, needs backend method verification
+- [ ] **Loading skeletons**: replace remaining spinners with skeleton loaders in reports/calendar
+- [ ] **Status / DocStatus badges**: render visual badges for Draft, Submitted, Cancelled — implemented in list/detail, needs expansion
 
 ### Nice-to-have (Phase 2)
-- [ ] **Charts**: workspace number cards with live counts, recharts integration for report charts
-- [ ] **Notifications panel**: real-time notification list + mark-read
-- [ ] **Global search**: cross-DocType search with ranking
-- [ ] **Calendar events**: fetch Event/Task doctypes and render on calendar
 - [ ] **Keyboard shortcuts**: Ctrl+S save, Ctrl+Z undo (form-level)
 - [ ] **Auto-save**: draft autosave every 30s
 - [ ] **Realtime updates**: Socket.io / frappe realtime for document changes
 - [ ] **Import**: CSV import for list view
 - [ ] **Bulk actions**: bulk submit, cancel, update
+- [ ] **Charts**: recharts integration for report charts (bar/line/pie components exist)
 
 ### Backend / infra
 - [ ] **Frappe bench app**: move custom trial/billing logic out of frontend into a proper bench app if needed
@@ -109,3 +110,4 @@
 4. **React Compiler** — manual memoization preserved, no skipped optimizations.
 5. **Form renderer is headless-CMS ready** — accepts raw Frappe documents or empty meta, dynamically renders any DocType.
 6. **Google Maps for Geolocation** — uses Google Maps JS API (free tier) with fallback to lat/lng inputs when API key is absent.
+7. **Recharts for charts** — bar, line, pie chart components used in workspace and reports.
