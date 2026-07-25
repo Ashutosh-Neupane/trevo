@@ -85,8 +85,8 @@
 | 29 | [Risk Assessment](implementation1/29-risk-assessment.md) | `29-risk-assessment.md` | P0 | - |
 | 30 | [Prioritized Implementation Roadmap](implementation1/30-prioritized-implementation-roadmap.md) | `30-prioritized-implementation-roadmap.md` | - | - |
 | 31 | [Estimated Effort](implementation1/31-estimated-effort.md) | `31-estimated-effort.md` | - | - |
-| 32 | [Success Metrics](implementation1/32-success-metrics.md) | `32-success-metrics.md` | - | - |
-| 33 | [Scoring](implementation1/33-scoring.md) | `33-scoring.md` | - | - |
+
+
 
 ---
 

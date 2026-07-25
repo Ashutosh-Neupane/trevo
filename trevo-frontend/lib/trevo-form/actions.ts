@@ -61,7 +61,7 @@ export async function executeFormAction(
 
     switch (action) {
       case "Save": {
-        const res = await fetch("/api/doctype/[doctype]/save", {
+        const res = await fetch(`/api/doctype/${encodeURIComponent(doctype)}/save`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -80,7 +80,7 @@ export async function executeFormAction(
 
       case "Submit":
       case "Update": {
-        const res = await fetch("/api/doctype/[doctype]/save", {
+        const res = await fetch(`/api/doctype/${encodeURIComponent(doctype)}/save`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...payload, action }),
@@ -98,7 +98,7 @@ export async function executeFormAction(
       }
 
       case "Cancel": {
-        const res = await fetch(`/api/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name!)}/route.ts`, {
+        const res = await fetch(`/api/doctype/${encodeURIComponent(doctype)}/${encodeURIComponent(name!)}/doc`, {
           method: "DELETE",
         }).catch(() => null);
 
