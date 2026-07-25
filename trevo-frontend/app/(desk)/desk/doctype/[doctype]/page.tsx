@@ -30,7 +30,7 @@ export default function DoctypeListView() {
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState<string>("modified");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filterState, setFilterState] = useState<Record<string, { value: string; operator: FilterOperator }>>({});
+  const [filterState, setFilterState] = useState<Record<string, { value: string; operator: FilterOperator; valueTo?: string }>>({});
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
@@ -69,16 +69,22 @@ export default function DoctypeListView() {
 
   const filters = useMemo(() => {
     return Object.entries(filterState)
-      .filter(([, f]) => f.value)
-      .map(([fieldname, { value, operator }]) => {
+      .filter(([, f]) => f.value || (f.operator === "Between" && f.valueTo))
+      .map(([fieldname, { value, operator, valueTo }]) => {
         const field = listFields.find((f) => f.fieldname === fieldname);
         const isDate = field?.fieldtype === "Date" || field?.fieldtype === "Datetime";
-        const v = isDate ? value : operator === "like" ? `%${value}%` : operator === "not like" ? `%${value}%` : value;
+        let v: unknown = value;
+        if (operator === "Between") {
+          v = [value, valueTo || ""];
+        } else if (!isDate) {
+          if (operator === "like") v = `%${value}%`;
+          else if (operator === "not like") v = `%${value}%`;
+        }
         return [doctype, fieldname, operator, v] as [string, string, FilterOperator, unknown];
       });
   }, [filterState, listFields, doctype]);
 
-  const handleFiltersChange = (newFilters: Record<string, { value: string; operator: FilterOperator }>) => {
+  const handleFiltersChange = (newFilters: Record<string, { value: string; operator: FilterOperator; valueTo?: string }>) => {
     setFilterState(newFilters);
     setPage(0);
   };

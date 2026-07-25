@@ -14,9 +14,15 @@ export type FilterDef = {
   operators?: FilterOperator[];
 };
 
+interface FilterValue {
+  value: string;
+  operator: FilterOperator;
+  valueTo?: string;
+}
+
 interface ListFiltersProps {
-  filters: Record<string, { value: string; operator: FilterOperator }>;
-  onFiltersChange: (filters: Record<string, { value: string; operator: FilterOperator }>) => void;
+  filters: Record<string, FilterValue>;
+  onFiltersChange: (filters: Record<string, FilterValue>) => void;
   availableFilters: FilterDef[];
 }
 
@@ -29,7 +35,7 @@ const DEFAULT_OPERATORS: Record<string, FilterOperator[]> = {
 
 export default function ListFilters({ filters, onFiltersChange, availableFilters }: ListFiltersProps) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Record<string, { value: string; operator: FilterOperator }>>({});
+  const [draft, setDraft] = useState<Record<string, FilterValue>>({});
 
   const activeCount = Object.values(filters).filter((f) => f.value).length;
 
@@ -49,11 +55,15 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
     setOpen(false);
   };
 
-  const updateDraft = (fieldname: string, value: string) => {
+  const updateDraft = (fieldname: string, value: string, key?: "value" | "valueTo") => {
     setDraft((prev) => {
       const next = { ...prev };
       const current = next[fieldname] || { value: "", operator: "=" };
-      if (value) next[fieldname] = { ...current, value }; else delete next[fieldname];
+      if (key === "valueTo") {
+        if (value) next[fieldname] = { ...current, valueTo: value }; else if (current.value) next[fieldname] = current; else delete next[fieldname];
+      } else {
+        if (value) next[fieldname] = { ...current, value }; else if (current.valueTo) next[fieldname] = { ...current, value: "" }; else delete next[fieldname];
+      }
       return next;
     });
   };
@@ -62,7 +72,11 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
     setDraft((prev) => {
       const next = { ...prev };
       const current = next[fieldname] || { value: "", operator: "=" };
-      if (current.value) next[fieldname] = { ...current, operator }; else delete next[fieldname];
+      if (current.value) {
+        next[fieldname] = operator === "Between" ? { ...current, operator, value: "", valueTo: "" } : { ...current, operator };
+      } else {
+        delete next[fieldname];
+      }
       return next;
     });
   };
@@ -93,7 +107,8 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
           <div className="space-y-3">
             {availableFilters.map((f) => {
               const ops = f.operators || DEFAULT_OPERATORS[f.type] || DEFAULT_OPERATORS.text;
-              const current = draft[f.fieldname] || { value: "", operator: ops[0] };
+              const current = draft[f.fieldname] || { value: "", operator: ops[0] as FilterOperator };
+              const isBetween = current.operator === "Between";
               return (
                 <div key={f.fieldname}>
                   <label className="mb-1 block text-xs font-medium text-zinc-500">{f.label}</label>
@@ -107,7 +122,24 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
                         <option key={op} value={op}>{op}</option>
                       ))}
                     </select>
-                    {f.type === "select" && f.options ? (
+                    {isBetween ? (
+                      <div className="flex flex-1 gap-1">
+                        <input
+                          type={f.type === "date" ? "date" : f.type === "number" ? "number" : "text"}
+                          value={current.value}
+                          onChange={(e) => updateDraft(f.fieldname, e.target.value, "value")}
+                          placeholder="From"
+                          className="flex-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                        />
+                        <input
+                          type={f.type === "date" ? "date" : f.type === "number" ? "number" : "text"}
+                          value={current.valueTo || ""}
+                          onChange={(e) => updateDraft(f.fieldname, e.target.value, "valueTo")}
+                          placeholder="To"
+                          className="flex-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                        />
+                      </div>
+                    ) : f.type === "select" && f.options ? (
                       <select
                         value={current.value}
                         onChange={(e) => updateDraft(f.fieldname, e.target.value)}
