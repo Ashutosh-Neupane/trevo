@@ -18,6 +18,13 @@ import HTMLField from "./HTMLField";
 import CodeField from "./CodeField";
 import ReadOnlyField from "./ReadOnlyField";
 import PasswordField from "./PasswordField";
+import GeolocationField from "./GeolocationField";
+import SignatureField from "./SignatureField";
+import RatingField from "./RatingField";
+import BarcodeField from "./BarcodeField";
+import DurationField from "./DurationField";
+import JSONField from "./JSONField";
+import TableMultiSelectField from "./TableMultiSelectField";
 
 /**
  * FieldControl — dispatches to the appropriate field component based on fieldtype.
@@ -58,6 +65,7 @@ function FieldControl({
       case "Text Editor":
         return <TextEditorField {...props} />;
       case "Link":
+        return <LinkField {...props} />;
       case "Dynamic Link":
         return <LinkField {...props} />;
       case "Attach":
@@ -73,6 +81,20 @@ function FieldControl({
         return <ReadOnlyField {...props} />;
       case "Password":
         return <PasswordField {...props} />;
+      case "Geolocation":
+        return <GeolocationField {...props} />;
+      case "Signature":
+        return <SignatureField {...props} />;
+      case "Rating":
+        return <RatingField {...props} />;
+      case "Barcode":
+        return <BarcodeField {...props} />;
+      case "Duration":
+        return <DurationField {...props} />;
+      case "JSON":
+        return <JSONField {...props} />;
+      case "Table MultiSelect":
+        return <TableMultiSelectField {...props} />;
       default:
         return <FormField {...props} />;
     }

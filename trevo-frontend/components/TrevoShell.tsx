@@ -8,6 +8,7 @@ import { useUIStore } from "@/lib/stores/ui.store";
 import { useWorkspaces } from "@/lib/hooks/useWorkspaces";
 import CommandPalette from "@/components/CommandPalette";
 import NotificationsPanel from "@/components/NotificationsPanel";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import {
   Moon,
   Sun,
@@ -192,6 +193,9 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
             sidebarOpen ? "md:ml-64" : "md:ml-0",
           ].join(" ")}
         >
+          <div className="mb-4">
+            <Breadcrumbs />
+          </div>
           {children}
         </main>
       </div>

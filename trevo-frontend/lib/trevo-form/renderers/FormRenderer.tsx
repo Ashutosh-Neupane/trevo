@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import type { DocTypeMeta, DocField, FrappeDocument } from "@/lib/frappe/types";
 import type { TrevoDocument } from "../types";
 import { parseDoctypeMeta } from "../meta/parseDoctypeMeta";
 import FormControl from "../controls/FormControl";
 import TableField from "../controls/TableField";
 import { useTrevoFormStore } from "../FormStore";
+import { validateFields } from "../validation";
 
 interface FormRendererProps {
   meta: DocTypeMeta | null | undefined;
@@ -58,11 +59,37 @@ export default function FormRenderer({
     return vals;
   }, [document, fields]);
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const handleFieldChange = (fieldname: string, value: unknown) => {
     const next = { ...formValues, [fieldname]: value };
     onChange?.(next);
     store.setField(fieldname, value);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[fieldname];
+      return next;
+    });
   };
+
+  const runValidation = useCallback(() => {
+    const validationErrors = validateFields(fields, formValues);
+    const mapped = Object.fromEntries(validationErrors.map((e) => [e.fieldname, e.message])) as Record<string, string>;
+    setErrors(mapped);
+    return validationErrors.length === 0;
+  }, [fields, formValues]);
+
+  const handleSave = useCallback(async () => {
+    if (!runValidation()) return;
+    const next = { ...formValues };
+    await onSave?.(next);
+  }, [runValidation, onSave, formValues]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!runValidation()) return;
+    const next = { ...formValues };
+    await onSubmit?.(next);
+  }, [runValidation, onSubmit, formValues]);
 
   const renderSection = (section: typeof sections[0]) => {
     const isCollapsed = store.collapsedSections.has(section.fieldname);
@@ -105,6 +132,7 @@ export default function FormRenderer({
                   value={formValues[field.fieldname]}
                   onChange={(val) => handleFieldChange(field.fieldname, val)}
                   disabled={!editable || isReadOnly}
+                  error={errors[field.fieldname]}
                 />
               ))}
 
@@ -145,24 +173,24 @@ export default function FormRenderer({
             <span className="text-sm text-zinc-600 dark:text-zinc-400">Auto-save enabled</span>
           </div>
           <div className="flex gap-2">
-            {onSave && (
-              <button
-                type="button"
-                onClick={() => onSave(formValues)}
-                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors"
-              >
-                Save
-              </button>
-            )}
-            {onSubmit && (
-              <button
-                type="button"
-                onClick={() => onSubmit(formValues)}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-              >
-                Submit
-              </button>
-            )}
+              {onSave && (
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors"
+                >
+                  Save
+                </button>
+              )}
+              {onSubmit && (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  Submit
+                </button>
+              )}
             {onDiscard && (
               <button
                 type="button"
@@ -198,6 +226,7 @@ export default function FormRenderer({
               value={formValues[field.fieldname]}
               onChange={(val) => handleFieldChange(field.fieldname, val)}
               disabled={!editable || isReadOnly}
+              error={errors[field.fieldname]}
             />
           ))}
         </div>

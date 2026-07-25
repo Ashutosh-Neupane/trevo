@@ -31,6 +31,7 @@
 - `upload.ts` — multipart file upload
 - `report.ts` — runReport, fetchReportMeta
 - `boot.ts` — assembleBootInfo (composes user + apps since `get_bootinfo` is 403)
+- `maps.ts` — Google Maps script loader for Geolocation field
 
 ### State & Data layer
 - **Zustand stores**: `auth.store.ts` (user, bootInfo), `ui.store.ts` (sidebar, theme), `desk.store.ts` (recent docs)
@@ -42,7 +43,7 @@
 - `desk/doctype/page.tsx` — all DocType list
 - `desk/doctype/[doctype]/page.tsx` — list view with sorting, pagination, filters, bulk delete, proper meta-driven columns
 - `desk/doctype/[doctype]/[name]/page.tsx` — detail view with tabs: Details, Comments, Attachments, Version History
-- `desk/doctype/[doctype]/[name]/edit/page.tsx` — edit form with Save/Submit/Discard/Cancel actions
+- `desk/doctype/[doctype]/[name]/edit/page.tsx` — edit form withSave/Submit/Discard/Cancel actions
 - `desk/doctype/[doctype]/new/page.tsx` — new document form
 - `desk/workspace/[name]/page.tsx` — workspace shortcuts, links, number cards, charts placeholders
 - `desk/forms/page.tsx` — searchable New Document selector
@@ -56,31 +57,31 @@
 - `TrevoShell.tsx` — header, collapsible sidebar with dynamic workspace items, theme toggle, command palette trigger, user menu
 - `CommandPalette.tsx` — Ctrl+K palette with quick actions, workspace search, theme switcher
 - `NotificationsPanel.tsx` — notification dropdown
-- `shadcn/card.tsx`, `shadcn/tabs.tsx` — minimal primitives
-- `Skeleton.tsx`, `ErrorBoundary.tsx`
+- `Breadcrumbs.tsx` — path-aware breadcrumbs in shell
+- `Skeleton.tsx` — `Skeleton`, `FormSkeleton`, `TableSkeleton`, `CardSkeleton`, `DashboardSkeleton`
+- `ErrorBoundary.tsx`
+- `shadcn/card.tsx`, `shadcn/button.tsx`, `shadcn/input.tsx`, `shadcn/label.tsx`, `shadcn/badge.tsx`, `shadcn/tabs.tsx`, `shadcn/select.tsx` — minimal primitives
 
 ### Dynamic form system (`lib/trevo-form/`)
-- `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents
+- `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents, includes client-side validation before save
 - `FormControl.tsx` — dispatches to field controls by fieldtype
 - `FormStore.ts` — section collapse state
+- `validation.ts` — client-side validation (mandatory, regex, min/max) using Frappe meta
 - `parseDoctypeMeta.ts` — maps Frappe Section/Column/Tab breaks into Trevo sections
-- Field controls: FormField, SelectField, DateField, DateTimeField, CheckField, IntField, FloatField, CurrencyField, TextEditorField, LinkField, AttachmentField, TableField, HTMLField, CodeField, ReadOnlyField, PasswordField
+- Field controls: FormField, SelectField, DateField, DateTimeField, CheckField, IntField, FloatField, CurrencyField, TextEditorField, LinkField, AttachmentField, TableField, HTMLField, CodeField, ReadOnlyField, PasswordField, GeolocationField (Google Maps), SignatureField, RatingField, BarcodeField, DurationField, JSONField, TableMultiSelectField
 
 ---
 
 ## ⏳ REMAINING
 
 ### Must-have for production parity
-- [ ] **shadcn primitives**: button, input, label, select, checkbox, badge, dialog, dropdown-menu, popover, tooltip, separator, scroll-area, slot, avatar, textarea
-- [ ] **Remaining field types**: Signature, Geolocation, Rating, Barcode, Duration, JSON, Table MultiSelect, Dynamic Link
+- [ ] **Dynamic Link field**: fully dynamic doctype resolution from another field value in search
 - [ ] **Child table save backend**: ensure `savedocs` correctly serializes nested child table arrays with parent/child DocType relationships
 - [ ] **List view filters**: proper date-range, numeric-range, link filters with operator selectors
 - [ ] **List view export**: CSV/Excel export via Frappe API
-- [ ] **Form validation**: client-side validation using Frappe meta (mandatory, regex, min/max) before save
 - [ ] **Document actions**: Print, Email, Share, Delete with proper Frappe method calls
-- [ ] **Navigation breadcrumbs**: path-aware breadcrumbs in shell
-- [ ] **404 / error pages**: styled error states
-- [ ] **Loading skeletons**: replace spinners with skeleton loaders in list/detail/reports
+- [ ] **Loading skeletons**: replace spinners with skeleton loaders in list/detail/reports pages
+- [ ] **Status / DocStatus badges**: render visual badges for Draft, Submitted, Cancelled, etc.
 
 ### Nice-to-have (Phase 2)
 - [ ] **Charts**: workspace number cards with live counts, recharts integration for report charts
@@ -95,7 +96,7 @@
 
 ### Backend / infra
 - [ ] **Frappe bench app**: move custom trial/billing logic out of frontend into a proper bench app if needed
-- [ ] **Environment config**: NEXT_PUBLIC_FRAPPE_BASE_URL, FRAPPE_BACKEND_URL
+- [ ] **Environment config**: NEXT_PUBLIC_FRAPPE_BASE_URL, FRAPPE_BACKEND_URL, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 - [ ] **Docker / deploy config**: vercel.json or Dockerfile
 - [ ] **E2E tests**: Playwright against localhost:8080
 
@@ -107,3 +108,4 @@
 3. **savedocs for Save/Submit** — the real Frappe desk path, runs server-side hooks.
 4. **React Compiler** — manual memoization preserved, no skipped optimizations.
 5. **Form renderer is headless-CMS ready** — accepts raw Frappe documents or empty meta, dynamically renders any DocType.
+6. **Google Maps for Geolocation** — uses Google Maps JS API (free tier) with fallback to lat/lng inputs when API key is absent.
