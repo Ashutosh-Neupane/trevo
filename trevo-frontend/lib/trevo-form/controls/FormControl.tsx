@@ -26,26 +26,16 @@ import DurationField from "./DurationField";
 import JSONField from "./JSONField";
 import TableMultiSelectField from "./TableMultiSelectField";
 
-/**
- * FieldControl — dispatches to the appropriate field component based on fieldtype.
- * Wraps with consistent label, error display, and spacing.
- */
-function FieldControl({
-  field,
-  value,
-  onChange,
-  error,
-  disabled = false,
-}: FieldControlProps) {
-  const renderInput = () => {
-    const props = {
-      field,
-      value,
-      onChange,
-      disabled: disabled || !!field.read_only,
-      error,
-    };
+function FieldControl({ field, value, onChange, error, disabled = false }: FieldControlProps) {
+  const props = {
+    field,
+    value,
+    onChange,
+    disabled: disabled || !!field.read_only,
+    error,
+  };
 
+  const renderInput = () => {
     switch (field.fieldtype) {
       case "Select":
       case "Autocomplete":
