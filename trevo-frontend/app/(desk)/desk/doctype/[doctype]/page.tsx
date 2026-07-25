@@ -3,18 +3,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Search, Download } from "lucide-react";
+import { Search, Download, Upload } from "lucide-react";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useList } from "@/lib/hooks/useList";
 import { useListCount } from "@/lib/hooks/useList";
+import { useSaveDocument, useCancelDocument, useDiscardDocument } from "@/lib/hooks/useDocument";
 import type { FilterOperator } from "@/lib/frappe/types";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/shadcn/dialog";
 import { TableSkeleton } from "@/components/Skeleton";
 import ListFilters from "@/components/ListFilters";
 import type { FilterDef } from "@/components/ListFilters";
 import { exportToCSV, exportToJSON } from "@/lib/frappe/export";
+import { importCsvToDocType } from "@/lib/frappe/import";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -27,12 +30,16 @@ export default function DoctypeListView() {
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState<string>("modified");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filters, setFilters] = useState<Array<[string, string, FilterOperator, unknown]>>([]);
+  const [filterState, setFilterState] = useState<Record<string, { value: string; operator: FilterOperator }>>({});
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const { data: meta } = useDoctype(doctype);
+  const isSubmittable = !!meta?.is_submittable;
 
   const listFields = useMemo(() => {
     const fields = meta?.fields;
@@ -43,32 +50,36 @@ export default function DoctypeListView() {
   const availableFilters: FilterDef[] = useMemo(() => {
     return listFields
       .filter((f) => ["Select", "Autocomplete", "Date", "Datetime", "Int", "Float", "Currency"].includes(f.fieldtype))
-      .map((f) => ({
-        fieldname: f.fieldname,
-        label: f.label || f.fieldname,
-        type: f.fieldtype === "Date" || f.fieldtype === "Datetime" ? "date" : f.fieldtype === "Int" || f.fieldtype === "Float" || f.fieldtype === "Currency" ? "number" : f.fieldtype === "Select" || f.fieldtype === "Autocomplete" ? "select" : "text",
-        options: f.fieldtype === "Select" || f.fieldtype === "Autocomplete" ? (f.options || "").split("\n").map((o) => ({ value: o, label: o })).filter(Boolean) : undefined,
-      }));
+      .map((f) => {
+        const type = f.fieldtype === "Date" || f.fieldtype === "Datetime" ? "date" : f.fieldtype === "Int" || f.fieldtype === "Float" || f.fieldtype === "Currency" ? "number" : f.fieldtype === "Select" || f.fieldtype === "Autocomplete" ? "select" : "text";
+        const operators: FilterOperator[] =
+          type === "date" ? ["=", "!=", ">", "<", ">=", "<=", "Between"] :
+          type === "number" ? ["=", "!=", ">", "<", ">=", "<=", "Between"] :
+          type === "select" ? ["=", "!=", "like", "not like"] :
+          ["like", "=", "!=", "is"];
+        return {
+          fieldname: f.fieldname,
+          label: f.label || f.fieldname,
+          type,
+          options: f.fieldtype === "Select" || f.fieldtype === "Autocomplete" ? (f.options || "").split("\n").map((o) => ({ value: o, label: o })).filter(Boolean) : undefined,
+          operators,
+        };
+      });
   }, [listFields]);
 
-  const stringFilters = useMemo(() => {
-    const result: Record<string, string> = {};
-    for (const f of filters) {
-      if (f[1] && f[3]) result[f[1]] = String(f[3]);
-    }
-    return result;
-  }, [filters]);
-
-  const handleFiltersChange = (newFilters: Record<string, string>) => {
-    const next: Array<[string, string, FilterOperator, unknown]> = [];
-    for (const [fieldname, value] of Object.entries(newFilters)) {
-      if (value) {
+  const filters = useMemo(() => {
+    return Object.entries(filterState)
+      .filter(([, f]) => f.value)
+      .map(([fieldname, { value, operator }]) => {
         const field = listFields.find((f) => f.fieldname === fieldname);
-        const op: FilterOperator = field?.fieldtype === "Date" || field?.fieldtype === "Datetime" ? "=" : "like";
-        next.push([doctype, fieldname, op, field?.fieldtype === "Date" || field?.fieldtype === "Datetime" ? value : `%${value}%`]);
-      }
-    }
-    setFilters(next);
+        const isDate = field?.fieldtype === "Date" || field?.fieldtype === "Datetime";
+        const v = isDate ? value : operator === "like" ? `%${value}%` : operator === "not like" ? `%${value}%` : value;
+        return [doctype, fieldname, operator, v] as [string, string, FilterOperator, unknown];
+      });
+  }, [filterState, listFields, doctype]);
+
+  const handleFiltersChange = (newFilters: Record<string, { value: string; operator: FilterOperator }>) => {
+    setFilterState(newFilters);
     setPage(0);
   };
 
@@ -119,6 +130,46 @@ export default function DoctypeListView() {
     refetch();
   };
 
+  const saveMutation = useSaveDocument(doctype);
+  const cancelMutation = useCancelDocument(doctype);
+  const discardMutation = useDiscardDocument(doctype);
+
+  const handleBulkSubmit = async () => {
+    for (const name of selectedRows) {
+      try {
+        await saveMutation.mutateAsync({ doc: { doctype, name }, action: "Submit" });
+      } catch {
+        // continue on failure
+      }
+    }
+    setSelectedRows(new Set());
+    refetch();
+  };
+
+  const handleBulkCancel = async () => {
+    for (const name of selectedRows) {
+      try {
+        await cancelMutation.mutateAsync(name);
+      } catch {
+        // continue on failure
+      }
+    }
+    setSelectedRows(new Set());
+    refetch();
+  };
+
+  const handleBulkDiscard = async () => {
+    for (const name of selectedRows) {
+      try {
+        await discardMutation.mutateAsync(name);
+      } catch {
+        // continue on failure
+      }
+    }
+    setSelectedRows(new Set());
+    refetch();
+  };
+
   const handleExportCSV = () => {
     const cols = listFields.map((f) => ({ fieldname: f.fieldname, label: f.label || undefined }));
     exportToCSV(rows, cols, `${doctype}_export.csv`);
@@ -126,6 +177,26 @@ export default function DoctypeListView() {
 
   const handleExportJSON = () => {
     exportToJSON(rows, `${doctype}_export.json`);
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    try {
+      const fieldMap = listFields.map((f) => ({ fieldname: f.fieldname, header: f.label || f.fieldname }));
+      const result = await importCsvToDocType(importFile, doctype, fieldMap);
+      alert(`Imported ${result.imported} of ${result.total} records`);
+      if (result.errors.length > 0) {
+        console.error("Import errors:", result.errors);
+      }
+      setImportFile(null);
+      setImportOpen(false);
+      refetch();
+    } catch {
+      alert("Import failed");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const SortIcon = ({ field }: { field: string }) => {
@@ -170,7 +241,7 @@ export default function DoctypeListView() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           </div>
 
-          <ListFilters filters={stringFilters} onFiltersChange={handleFiltersChange} availableFilters={availableFilters} />
+          <ListFilters filters={filterState} onFiltersChange={handleFiltersChange} availableFilters={availableFilters} />
 
           <DropdownMenu open={exportOpen} onOpenChange={setExportOpen}>
             <DropdownMenuTrigger>
@@ -188,6 +259,37 @@ export default function DoctypeListView() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import CSV</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-zinc-500">
+                  Upload a CSV file to import records. The first row must contain column headers that match field names.
+                </p>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-zinc-600 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800"
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setImportOpen(false)} disabled={importing}>
+                  Cancel
+                </Button>
+                <Button onClick={handleImport} disabled={!importFile || importing}>
+                  {importing ? "Importing..." : "Import"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Link
             href={`/desk/doctype/${encodeURIComponent(doctype)}/new`}
@@ -215,6 +317,22 @@ export default function DoctypeListView() {
                   {selectedRows.size} selected
                 </span>
                 <div className="flex gap-2">
+                  {isSubmittable && (
+                    <>
+                      <button
+                        onClick={handleBulkSubmit}
+                        className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+                      >
+                        Submit
+                      </button>
+                      <button
+                        onClick={handleBulkCancel}
+                        className="rounded-lg border border-yellow-600 px-3 py-1 text-sm font-medium text-yellow-700 hover:bg-yellow-50"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={handleBulkDelete}
                     className="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700"

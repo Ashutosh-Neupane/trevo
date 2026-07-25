@@ -76,3 +76,58 @@ export function DashboardSkeleton() {
     </div>
   );
 }
+
+export function ReportSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="flex gap-3">
+          <Skeleton className="h-10 w-full max-w-md" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+          <Skeleton className="h-5 w-48" />
+        </div>
+        <div className="p-4">
+          <TableSkeleton rows={8} cols={5} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function CalendarSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-10" />
+          <Skeleton className="h-10 w-40" />
+          <Skeleton className="h-10 w-10" />
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="grid grid-cols-7 border-b border-zinc-200 dark:border-zinc-700">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="px-2 py-2 text-center">
+              <Skeleton className="h-4 w-8 mx-auto" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div key={i} className="min-h-[100px] border-b border-r border-zinc-200 p-2 dark:border-zinc-700">
+              <Skeleton className="h-7 w-7 mb-2" />
+              <div className="space-y-1">
+                <Skeleton className="h-3 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -4,25 +4,34 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Button } from "@/components/shadcn/button";
 import { Filter } from "lucide-react";
+import type { FilterOperator } from "@/lib/frappe/types";
 
 export type FilterDef = {
   fieldname: string;
   label: string;
   type: "text" | "select" | "date" | "number";
   options?: Array<{ value: string; label: string }>;
+  operators?: FilterOperator[];
 };
 
 interface ListFiltersProps {
-  filters: Record<string, string>;
-  onFiltersChange: (filters: Record<string, string>) => void;
+  filters: Record<string, { value: string; operator: FilterOperator }>;
+  onFiltersChange: (filters: Record<string, { value: string; operator: FilterOperator }>) => void;
   availableFilters: FilterDef[];
 }
 
+const DEFAULT_OPERATORS: Record<string, FilterOperator[]> = {
+  text: ["like", "=", "!=", "is", "not like"],
+  select: ["=", "!=", "like", "not like", "in", "not in"],
+  date: ["=", "!=", ">", "<", ">=", "<=", "Between"],
+  number: ["=", "!=", ">", "<", ">=", "<=", "Between"],
+};
+
 export default function ListFilters({ filters, onFiltersChange, availableFilters }: ListFiltersProps) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [draft, setDraft] = useState<Record<string, { value: string; operator: FilterOperator }>>({});
 
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  const activeCount = Object.values(filters).filter((f) => f.value).length;
 
   const openFilters = () => {
     setDraft({ ...filters });
@@ -43,7 +52,17 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
   const updateDraft = (fieldname: string, value: string) => {
     setDraft((prev) => {
       const next = { ...prev };
-      if (value) next[fieldname] = value; else delete next[fieldname];
+      const current = next[fieldname] || { value: "", operator: "=" };
+      if (value) next[fieldname] = { ...current, value }; else delete next[fieldname];
+      return next;
+    });
+  };
+
+  const updateOperator = (fieldname: string, operator: FilterOperator) => {
+    setDraft((prev) => {
+      const next = { ...prev };
+      const current = next[fieldname] || { value: "", operator: "=" };
+      if (current.value) next[fieldname] = { ...current, operator }; else delete next[fieldname];
       return next;
     });
   };
@@ -72,45 +91,60 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
             )}
           </div>
           <div className="space-y-3">
-            {availableFilters.map((f) => (
-              <div key={f.fieldname}>
-                <label className="mb-1 block text-xs font-medium text-zinc-500">{f.label}</label>
-                {f.type === "select" && f.options ? (
-                  <select
-                    value={draft[f.fieldname] || ""}
-                    onChange={(e) => updateDraft(f.fieldname, e.target.value)}
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                  >
-                    <option value="">All</option>
-                    {f.options.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                ) : f.type === "date" ? (
-                  <input
-                    type="date"
-                    value={draft[f.fieldname] || ""}
-                    onChange={(e) => updateDraft(f.fieldname, e.target.value)}
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                  />
-                ) : f.type === "number" ? (
-                  <input
-                    type="number"
-                    value={draft[f.fieldname] || ""}
-                    onChange={(e) => updateDraft(f.fieldname, e.target.value)}
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    value={draft[f.fieldname] || ""}
-                    onChange={(e) => updateDraft(f.fieldname, e.target.value)}
-                    placeholder={`Search ${f.label}...`}
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                  />
-                )}
-              </div>
-            ))}
+            {availableFilters.map((f) => {
+              const ops = f.operators || DEFAULT_OPERATORS[f.type] || DEFAULT_OPERATORS.text;
+              const current = draft[f.fieldname] || { value: "", operator: ops[0] };
+              return (
+                <div key={f.fieldname}>
+                  <label className="mb-1 block text-xs font-medium text-zinc-500">{f.label}</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={current.operator}
+                      onChange={(e) => updateOperator(f.fieldname, e.target.value as FilterOperator)}
+                      className="w-28 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    >
+                      {ops.map((op) => (
+                        <option key={op} value={op}>{op}</option>
+                      ))}
+                    </select>
+                    {f.type === "select" && f.options ? (
+                      <select
+                        value={current.value}
+                        onChange={(e) => updateDraft(f.fieldname, e.target.value)}
+                        className="flex-1 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      >
+                        <option value="">All</option>
+                        {f.options.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    ) : f.type === "date" ? (
+                      <input
+                        type="date"
+                        value={current.value}
+                        onChange={(e) => updateDraft(f.fieldname, e.target.value)}
+                        className="flex-1 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      />
+                    ) : f.type === "number" ? (
+                      <input
+                        type="number"
+                        value={current.value}
+                        onChange={(e) => updateDraft(f.fieldname, e.target.value)}
+                        className="flex-1 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={current.value}
+                        onChange={(e) => updateDraft(f.fieldname, e.target.value)}
+                        placeholder={`Search ${f.label}...`}
+                        className="flex-1 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>

@@ -34,6 +34,11 @@ export default function FormField({ field, value, onChange, errors }: FormFieldP
 
   const handleChange = (next: unknown) => onChange(fieldName, next);
 
+  const selectOptions = useMemo(() => {
+    if (!field.options) return [];
+    return String(field.options).split("\n").filter(Boolean);
+  }, [field.options]);
+
   const widget = useMemo(() => {
     switch (field.fieldtype) {
       case "Check":
@@ -49,11 +54,7 @@ export default function FormField({ field, value, onChange, errors }: FormFieldP
         );
 
       case "Select":
-      case "Autocomplete": {
-        const options = useMemo(() => {
-          if (!field.options) return [];
-          return String(field.options).split("\n").filter(Boolean);
-        }, [field.options]);
+      case "Autocomplete":
         return (
           <select
             id={fieldName}
@@ -63,12 +64,11 @@ export default function FormField({ field, value, onChange, errors }: FormFieldP
             className="rounded border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100"
           >
             <option value="">{field.reqd ? "Select..." : "--"}</option>
-            {options.map((opt) => (
+            {selectOptions.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
         );
-      }
 
       case "Date":
         return (

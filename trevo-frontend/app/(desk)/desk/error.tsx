@@ -2,8 +2,7 @@
 
 import { Metadata } from "next";
 import { useState } from "react";
-import Link from "next/link";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Error — Trevo",
@@ -46,6 +45,7 @@ export default function ErrorPage({ error, reset }: { error: Error; reset: () =>
       >
         Try again
       </button>
+      {/* Trevo error boundary */}
     </div>
   );
 }
