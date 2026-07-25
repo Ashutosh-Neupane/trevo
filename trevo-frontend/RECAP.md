@@ -68,7 +68,7 @@
 - `charts.tsx` — `BarChartComponent`, `LineChartComponent`, `PieChartComponent` via recharts
 
 ### Dynamic form system (`lib/trevo-form/`)
-- `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents, includes client-side validation before save
+- `FormRenderer.tsx` — renders full DocType forms with sections/tabs/columns, supports edit/new modes, accepts raw Frappe documents, includes client-side validation before save, Ctrl+S keyboard shortcut, auto-save every 30s when dirty
 - `FormControl.tsx` — dispatches to field controls by fieldtype
 - `FormStore.ts` — section collapse state
 - `validation.ts` — client-side validation (mandatory, regex, min/max) using Frappe meta
@@ -88,8 +88,8 @@
 - [ ] **Status / DocStatus badges**: render visual badges for Draft, Submitted, Cancelled — implemented in list/detail, needs expansion
 
 ### Nice-to-have (Phase 2)
-- [ ] **Keyboard shortcuts**: Ctrl+S save, Ctrl+Z undo (form-level)
-- [ ] **Auto-save**: draft autosave every 30s
+- [x] **Keyboard shortcuts**: Ctrl+S save in forms
+- [x] **Auto-save**: draft autosave every 30s when form is dirty
 - [ ] **Realtime updates**: Socket.io / frappe realtime for document changes
 - [ ] **Import**: CSV import for list view
 - [ ] **Bulk actions**: bulk submit, cancel, update
@@ -111,3 +111,5 @@
 5. **Form renderer is headless-CMS ready** — accepts raw Frappe documents or empty meta, dynamically renders any DocType.
 6. **Google Maps for Geolocation** — uses Google Maps JS API (free tier) with fallback to lat/lng inputs when API key is absent.
 7. **Recharts for charts** — bar, line, pie chart components used in workspace and reports.
+8. **Keyboard shortcuts** — Ctrl+S triggers save in forms when not focused on input fields.
+9. **Auto-save** — forms auto-save every 30 seconds when dirty (modified since last save).
