@@ -1,0 +1,85 @@
+"use client";
+
+import { memo } from "react";
+import type { DocField } from "@/lib/frappe/types";
+import type { FieldControlProps } from "./index";
+import FormField from "./FormField";
+import SelectField from "./SelectField";
+import DateField from "./DateField";
+import DateTimeField from "./DateTimeField";
+import CheckField from "./CheckField";
+import IntField from "./IntField";
+import FloatField from "./FloatField";
+import CurrencyField from "./CurrencyField";
+import TextEditorField from "./TextEditorField";
+import LinkField from "./LinkField";
+import AttachmentField from "./AttachmentField";
+import TableField from "./TableField";
+
+/**
+ * FieldControl — dispatches to the appropriate field component based on fieldtype.
+ * Wraps with consistent label, error display, and spacing.
+ */
+function FieldControl({
+  field,
+  value,
+  onChange,
+  error,
+  disabled = false,
+}: FieldControlProps) {
+  const renderInput = () => {
+    const props = {
+      field,
+      value,
+      onChange,
+      disabled: disabled || !!field.read_only,
+      error,
+    };
+
+    switch (field.fieldtype) {
+      case "Select":
+      case "Autocomplete":
+        return <SelectField {...props} />;
+      case "Date":
+        return <DateField {...props} />;
+      case "Datetime":
+        return <DateTimeField {...props} />;
+      case "Check":
+        return <CheckField {...props} />;
+      case "Int":
+        return <IntField {...props} />;
+      case "Float":
+        return <FloatField {...props} />;
+      case "Currency":
+        return <CurrencyField {...props} />;
+      case "Text Editor":
+        return <TextEditorField {...props} />;
+      case "Link":
+      case "Dynamic Link":
+        return <LinkField {...props} />;
+      case "Attach":
+      case "Attach Image":
+        return <AttachmentField {...props} />;
+      case "Table":
+        return <TableField {...props} />;
+      default:
+        return <FormField {...props} />;
+    }
+  };
+
+  return (
+    <div className={`flex flex-col gap-1.5 ${field.fullWidth ? "col-span-full" : ""}`}>
+      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {field.label || field.fieldname}
+        {field.reqd && <span className="ml-1 text-red-500">*</span>}
+      </label>
+      {renderInput()}
+      {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
+      {field.description && !error && (
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{field.description}</span>
+      )}
+    </div>
+  );
+}
+
+export default memo(FieldControl);

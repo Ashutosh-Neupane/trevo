@@ -1,0 +1,41 @@
+# Agent/tool context directories
+.blackbox/
+.qodo/
+
+# Dependencies and build outputs
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Frappe backend (not part of frontend repo)
+frappe/
+
+# Environment and secrets
+.env*
+.env.local
+.env.*.local
+
+# OS and editor files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Misc
+.idea/
+.vscode/
+*.pem
