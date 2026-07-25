@@ -9,11 +9,15 @@ export function useDocument<T extends FrappeDocument = FrappeDocument>(
   doctype: string,
   name: string,
   fields?: string[],
+  pollMs?: number,
 ) {
   return useQuery<T>({
     queryKey: ["doc", doctype, name],
     queryFn: () => fetchDocument<T>(doctype, name, fields),
     enabled: !!doctype && !!name && name !== "new",
+    refetchInterval: pollMs && pollMs > 0 ? pollMs : undefined,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 

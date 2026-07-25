@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useDocument } from "@/lib/hooks/useDocument";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +24,18 @@ export default function DoctypeDetailPage() {
   const [activeTab, setActiveTab] = useState("details");
 
   const { data: meta } = useDoctype(doctype);
-  const { data: doc, isLoading, error } = useDocument(doctype, name);
+  const { data: doc, isLoading, error } = useDocument(doctype, name, undefined, 30000);
+  const prevModifiedRef = useRef<string | undefined>(doc?.modified);
+
+  useEffect(() => {
+    if (!doc) return;
+    if (prevModifiedRef.current && prevModifiedRef.current !== doc.modified) {
+      toast.info("Document updated", {
+        description: "This document was modified by another user or session.",
+      });
+    }
+    prevModifiedRef.current = doc.modified;
+  }, [doc]);
 
   const { data: comments } = useQuery({
     queryKey: ["comments", doctype, name],

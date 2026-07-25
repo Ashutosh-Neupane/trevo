@@ -1,6 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import FormRenderer from "@/lib/trevo-form/renderers/FormRenderer";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useDocument } from "@/lib/hooks/useDocument";
@@ -19,10 +21,22 @@ export default function DoctypeEditPage() {
   const name = decodeURIComponent(params.name);
 
   const { data: meta } = useDoctype(doctype);
-  const { data: doc, isLoading: docLoading } = useDocument(doctype, name);
+  const { data: doc, isLoading: docLoading } = useDocument(doctype, name, undefined, 30000);
   const saveMutation = useSaveDocument(doctype);
   const cancelMutation = useCancelDocument(doctype);
   const discardMutation = useDiscardDocument(doctype);
+
+  const prevModifiedRef = useRef<string | undefined>(doc?.modified);
+
+  useEffect(() => {
+    if (!doc) return;
+    if (prevModifiedRef.current && prevModifiedRef.current !== doc.modified) {
+      toast.info("Document updated", {
+        description: "This document was modified by another user or session.",
+      });
+    }
+    prevModifiedRef.current = doc.modified;
+  }, [doc]);
 
   const docStatusBadge = (() => {
     if (!doc) return null;
