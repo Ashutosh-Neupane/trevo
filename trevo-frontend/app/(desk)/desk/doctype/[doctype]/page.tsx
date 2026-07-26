@@ -69,7 +69,11 @@ export default function DoctypeListView() {
 
   const filters = useMemo(() => {
     return Object.entries(filterState)
-      .filter(([, f]) => f.value || (f.operator === "Between" && f.valueTo))
+      .filter(([, f]) => {
+        if (!f.value && !f.valueTo) return false;
+        if (f.operator === "Between" && (!f.value || !f.valueTo)) return false;
+        return true;
+      })
       .map(([fieldname, { value, operator, valueTo }]) => {
         const field = listFields.find((f) => f.fieldname === fieldname);
         const isDate = field?.fieldtype === "Date" || field?.fieldtype === "Datetime";

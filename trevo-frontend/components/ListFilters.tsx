@@ -37,7 +37,7 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Record<string, FilterValue>>({});
 
-  const activeCount = Object.values(filters).filter((f) => f.value).length;
+  const activeCount = Object.values(filters).filter((f) => f.value || f.valueTo).length;
 
   const openFilters = () => {
     setDraft({ ...filters });
