@@ -21,6 +21,7 @@ import { exportToCSV, exportToJSON } from "@/lib/frappe/export";
 import { importCsvToDocType } from "@/lib/frappe/import";
 import { KanbanBoard } from "@/components/features/kanban";
 import { GanttView } from "@/components/features/gantt";
+import { TreeView } from "@/components/features/tree";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -40,7 +41,7 @@ export default function DoctypeListView() {
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "kanban" | "gantt">("list");
+  const [viewMode, setViewMode] = useState<"list" | "kanban" | "gantt" | "tree">("list");
 
   const { data: meta } = useDoctype(doctype);
   const isSubmittable = !!meta?.is_submittable;
@@ -228,11 +229,12 @@ export default function DoctypeListView() {
           <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             {total}
           </span>
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "kanban" | "gantt")} className="ml-4">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "kanban" | "gantt" | "tree")} className="ml-4">
             <TabsList>
               <TabsTrigger value="list">List</TabsTrigger>
               <TabsTrigger value="kanban">Kanban</TabsTrigger>
               <TabsTrigger value="gantt">Gantt</TabsTrigger>
+              <TabsTrigger value="tree">Tree</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -319,6 +321,10 @@ export default function DoctypeListView() {
         ) : viewMode === "gantt" ? (
           <div className="p-4">
             <GanttView doctype={doctype} />
+          </div>
+        ) : viewMode === "tree" ? (
+          <div className="p-4">
+            <TreeView doctype={doctype} />
           </div>
         ) : rows.length === 0 ? (
           <div className="p-12 text-center">
