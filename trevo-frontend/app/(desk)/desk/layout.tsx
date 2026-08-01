@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import TrevoShell from "@/components/TrevoShell";
 
 export default async function DeskLayout({
@@ -6,15 +7,10 @@ export default async function DeskLayout({
 }: {
   children: React.ReactNode;
 }) {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/auth/whoami`, {
-      cache: "no-store",
-    });
-    const data = await res.json();
-    if (!data.user || data.user === "Guest") {
-      redirect("/login");
-    }
-  } catch {
+  const cookieJar = await cookies();
+  const sid = cookieJar.get("sid")?.value;
+
+  if (!sid || sid === "Guest") {
     redirect("/login");
   }
 

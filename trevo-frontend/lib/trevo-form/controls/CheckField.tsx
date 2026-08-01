@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import type { FieldControlProps } from "./index";
 
 export default function CheckField({ field, value, onChange, disabled }: FieldControlProps) {

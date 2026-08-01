@@ -6,7 +6,17 @@ import { AuthProvider } from "@/lib/frappe/auth";
 import { useMemo } from "react";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const queryClient = useMemo(() => new QueryClient(), []);
+  const queryClient = useMemo(() => {
+    return new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 30000,
+          retry: 1,
+          refetchOnWindowFocus: false,
+        },
+      },
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -17,4 +27,3 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     </QueryClientProvider>
   );
 }
-

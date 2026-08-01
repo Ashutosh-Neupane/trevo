@@ -3,7 +3,6 @@
  * Each action provides optimistic updates, error handling, and rollback.
  */
 
-import type { TrevoDocument } from "./types";
 import type { TrevoFormStore } from "./FormStore";
 
 export interface FormActionResult {

@@ -2,7 +2,7 @@
 
 import type { FieldControlProps } from "./index";
 
-export default function BarcodeField({ field, value }: FieldControlProps) {
+export default function BarcodeField({ field: _field, value }: FieldControlProps) {
   const display = typeof value === "string" ? value : "-";
 
   return (

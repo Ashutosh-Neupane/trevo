@@ -8,7 +8,7 @@ import { uploadFile } from "@/lib/frappe/upload";
  * Attachment field — drag & drop file upload with preview, progress, and file list.
  * Significantly better than Frappe's basic file attach.
  */
-export default function AttachmentField({ field, value, onChange, disabled }: FieldControlProps) {
+export default function AttachmentField({ field, value, onChange: _onChange, disabled }: FieldControlProps) {
   const [files, setFiles] = useState<Array<{ name: string; url?: string; uploading?: boolean }>>([]);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
