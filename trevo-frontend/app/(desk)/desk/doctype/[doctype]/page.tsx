@@ -7,7 +7,7 @@ import { Search, Download, Upload } from "lucide-react";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useList } from "@/lib/hooks/useList";
 import { useListCount } from "@/lib/hooks/useList";
-import { useSaveDocument, useCancelDocument, useDiscardDocument } from "@/lib/hooks/useDocument";
+import { useSaveDocument, useCancelDocument } from "@/lib/hooks/useDocument";
 import type { FilterOperator } from "@/lib/frappe/types";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -16,8 +16,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { TableSkeleton } from "@/components/Skeleton";
 import ListFilters from "@/components/ListFilters";
 import type { FilterDef } from "@/components/ListFilters";
+import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { exportToCSV, exportToJSON } from "@/lib/frappe/export";
 import { importCsvToDocType } from "@/lib/frappe/import";
+import { KanbanBoard } from "@/components/features/kanban";
+import { GanttView } from "@/components/features/gantt";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -37,6 +40,7 @@ export default function DoctypeListView() {
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "kanban" | "gantt">("list");
 
   const { data: meta } = useDoctype(doctype);
   const isSubmittable = !!meta?.is_submittable;
@@ -142,7 +146,6 @@ export default function DoctypeListView() {
 
   const saveMutation = useSaveDocument(doctype);
   const cancelMutation = useCancelDocument(doctype);
-  const discardMutation = useDiscardDocument(doctype);
 
   const handleBulkSubmit = async () => {
     for (const name of selectedRows) {
@@ -160,18 +163,6 @@ export default function DoctypeListView() {
     for (const name of selectedRows) {
       try {
         await cancelMutation.mutateAsync(name);
-      } catch {
-        // continue on failure
-      }
-    }
-    setSelectedRows(new Set());
-    refetch();
-  };
-
-  const handleBulkDiscard = async () => {
-    for (const name of selectedRows) {
-      try {
-        await discardMutation.mutateAsync(name);
       } catch {
         // continue on failure
       }
@@ -237,6 +228,13 @@ export default function DoctypeListView() {
           <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             {total}
           </span>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "kanban" | "gantt")} className="ml-4">
+            <TabsList>
+              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="kanban">Kanban</TabsTrigger>
+              <TabsTrigger value="gantt">Gantt</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="flex items-center gap-2">
@@ -310,10 +308,18 @@ export default function DoctypeListView() {
         </div>
       </div>
 
-      {/* Data table */}
+      {/* Data table / views */}
       <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden">
         {isLoading ? (
           <TableSkeleton rows={pageSize} cols={listFields.length + 1} />
+        ) : viewMode === "kanban" ? (
+          <div className="p-4">
+            <KanbanBoard doctype={doctype} />
+          </div>
+        ) : viewMode === "gantt" ? (
+          <div className="p-4">
+            <GanttView doctype={doctype} />
+          </div>
         ) : rows.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-sm text-zinc-500">No records found.</p>
