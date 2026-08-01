@@ -2,6 +2,15 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { Plus, Settings } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import { KanbanColumn } from "./KanbanColumn";
 import type { KanbanCardData } from "./KanbanCard";
 import { Button } from "@/components/shadcn/button";
@@ -70,11 +79,11 @@ export function KanbanBoard({
   // Compute derived state from data
   const effectiveColumns = useMemo(
     () => (data?.columns && data.columns.length > 0 ? data.columns : columns),
-    [data?.columns, columns],
+    [data, columns],
   );
   const effectiveCards = useMemo(
     () => (data?.cards && data.cards.length > 0 ? data.cards : cards),
-    [data?.cards, cards],
+    [data, cards],
   );
 
   // Move card mutation
@@ -94,6 +103,45 @@ export function KanbanBoard({
       return res.json();
     },
   });
+
+  // dnd-kit sensors
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const id = String(event.active.id);
+    const card = effectiveCards.find((c) => c.id === id);
+    if (card) setDraggedCard(card);
+  }, [effectiveCards]);
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      setDraggedCard(null);
+      if (!over) return;
+      const cardId = String(active.id);
+      const columnId = String(over.id);
+      if (!cardId || !columnId) return;
+
+      const current = effectiveCards.find((c) => c.id === cardId);
+      if (!current || current.column === columnId) return;
+
+      // Optimistic update
+      setCards((prev) =>
+        prev.map((c) => (c.id === cardId ? { ...c, column: columnId } : c)),
+      );
+
+      // Server update
+      try {
+        await moveMutation.mutateAsync({ cardId, column: columnId });
+      } catch {
+        // Revert on failure
+        setCards((prev) =>
+          prev.map((c) => (c.id === cardId ? { ...c, column: current.column } : c)),
+        );
+      }
+    },
+    [effectiveCards, moveMutation],
+  );
 
   // Create card mutation
   const createMutation = useMutation({
@@ -117,35 +165,6 @@ export function KanbanBoard({
       refetch();
     },
   });
-
-const handleDragStart = useCallback(
-    (_e: React.DragEvent, _card: KanbanCardData) => {
-      setDraggedCard(_card);
-    },
-    [],
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedCard(null);
-  }, []);
-
-  const handleDrop = useCallback(
-    async (_e: React.DragEvent, columnId: string) => {
-      if (!draggedCard) return;
-
-      // Optimistic update
-      setCards((prev) =>
-        prev.map((c) => (c.id === draggedCard.id ? { ...c, column: columnId } : c)),
-      );
-
-      // Server update
-      await moveMutation.mutateAsync({
-        cardId: draggedCard.id,
-        column: columnId,
-      });
-    },
-    [draggedCard, moveMutation],
-  );
 
   const handleAddCard = useCallback(
     async (columnId: string) => {
@@ -228,36 +247,44 @@ const handleDragStart = useCallback(
           </div>
         </div>
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {activeColumns.map((col, index) => (
-            <KanbanColumn
-              key={col.id}
-              id={col.id}
-              title={col.title}
-              cards={effectiveCards.filter((c) => c.column === col.id)}
-              color={col.color ?? DEFAULT_COLORS[index % DEFAULT_COLORS.length]}
-              onAddCard={(columnId) =>
-                setNewCardDialog({ open: true, columnId })
-              }
-              onEditCard={handleEditCard}
-              onDeleteCard={handleDeleteCard}
-              onCardClick={handleCardClick}
-              onArchiveColumn={handleArchiveColumn}
-              onDrop={handleDrop}
-            />
-          ))}
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {activeColumns.map((col, index) => (
+              <KanbanColumn
+                key={col.id}
+                id={col.id}
+                title={col.title}
+                cards={effectiveCards.filter((c) => c.column === col.id)}
+                color={col.color ?? DEFAULT_COLORS[index % DEFAULT_COLORS.length]}
+                onAddCard={(columnId) =>
+                  setNewCardDialog({ open: true, columnId })
+                }
+                onEditCard={handleEditCard}
+                onDeleteCard={handleDeleteCard}
+                onCardClick={handleCardClick}
+                onArchiveColumn={handleArchiveColumn}
+              />
+            ))}
 
-          {/* Add column placeholder */}
-          <div className="flex w-72 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="flex flex-col items-center gap-2 text-zinc-400 hover:text-zinc-600 transition-colors"
-            >
-              <Plus className="h-6 w-6" />
-              <span className="text-sm">Add Column</span>
-            </button>
+            {/* Add column placeholder */}
+            <div className="flex w-72 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700">
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="flex flex-col items-center gap-2 text-zinc-400 hover:text-zinc-600 transition-colors"
+              >
+                <Plus className="h-6 w-6" />
+                <span className="text-sm">Add Column</span>
+              </button>
+            </div>
           </div>
-        </div>
+          {draggedCard && (
+            <DragOverlay>
+              <div className="w-64 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{draggedCard.title}</p>
+              </div>
+            </DragOverlay>
+          )}
+        </DndContext>
       )}
 
       {/* Add card dialog */}

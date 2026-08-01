@@ -1,10 +1,29 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import {
+  connectRealtime,
+  disconnectRealtime,
+  subscribeDocUpdate,
+  subscribeDocInfoUpdate,
+  subscribeNewComment,
+  subscribeVersion,
+  type DocUpdateEvent,
+  type DocInfoUpdateEvent,
+  type NewCommentEvent,
+  type VersionEvent,
+} from "@/lib/services/realtime";
 
 /**
- * Real-time updates hook — subscribes to Frappe realtime events.
- * Updates the form when changes are made by other users.
+ * Real-time updates hook — subscribes to Frappe realtime (socket.io) events
+ * for a given document, and fires the provided callbacks.
+ *
+ * - `onUpdate`  → `doc_update` / `docinfo_update` for this doc
+ * - `onComment` → `new_comment` for this doc
+ * - `onVersion` → `version` for this doc
+ *
+ * The shared socket connection is established on first use and torn down when
+ * the last subscriber unmounts (see lib/services/realtime.ts).
  */
 export function useRealtimeUpdates({
   doctype,
@@ -15,34 +34,59 @@ export function useRealtimeUpdates({
 }: {
   doctype?: string;
   docname?: string;
-  onUpdate?: (data: unknown) => void;
-  onComment?: (data: unknown) => void;
-  onVersion?: (data: unknown) => void;
+  onUpdate?: (data: DocUpdateEvent | DocInfoUpdateEvent) => void;
+  onComment?: (data: NewCommentEvent) => void;
+  onVersion?: (data: VersionEvent) => void;
 }) {
+  // Keep latest callbacks in refs so subscriptions don't churn on every render.
+  // Ref writes happen inside effects only (React 19 eslint rule).
+  const onUpdateRef = useRef(onUpdate);
+  const onCommentRef = useRef(onComment);
+  const onVersionRef = useRef(onVersion);
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+    onCommentRef.current = onComment;
+    onVersionRef.current = onVersion;
+  }, [onUpdate, onComment, onVersion]);
+
   useEffect(() => {
     if (!doctype || !docname) return;
+    connectRealtime();
 
-    // In a real implementation, this would use Socket.io or WebSocket
-    // to listen for Frappe realtime events:
-    // - `list_update` — when the list view changes
-    // - `docinfo_update` — when doc info changes
-    // - `new_comment` — when a comment is added
-    // - `version` — when a new version is created
-    //
-    // For now, we'll set up the infrastructure:
-    const rooms = [`doctype:${doctype}`, `doc:${doctype}:${docname}`];
-    void rooms;
+    const unsubDoc = subscribeDocUpdate((data) => {
+      if (data.doctype === doctype && (data.docname === docname || data.name === docname)) {
+        onUpdateRef.current?.(data);
+      }
+    });
 
-    // Simulated subscription (replace with real Socket.io client)
-    // frappe.realtime.on('docinfo_update', (data) => {
-    //   if (data.doctype === doctype && data.docname === docname) {
-    //     onUpdate?.(data);
-    //   }
-    // });
+    const unsubDocInfo = subscribeDocInfoUpdate((data) => {
+      if (data.doctype === doctype && data.docname === docname) {
+        onUpdateRef.current?.(data);
+      }
+    });
+
+    const unsubComment = subscribeNewComment((data) => {
+      if (data.doctype === doctype && data.docname === docname) {
+        onCommentRef.current?.(data);
+      }
+    });
+
+    const unsubVersion = subscribeVersion((data) => {
+      if (data.doctype === doctype && data.docname === docname) {
+        onVersionRef.current?.(data);
+      }
+    });
 
     return () => {
-      // Cleanup subscriptions
-      // _rooms.forEach(room => frappe.realtime.off(room));
+      unsubDoc();
+      unsubDocInfo();
+      unsubComment();
+      unsubVersion();
+      if (typeof window !== "undefined") {
+        disconnectRealtime();
+      }
     };
-  }, [doctype, docname, onUpdate, onComment, onVersion]);
+  }, [doctype, docname]);
 }
+

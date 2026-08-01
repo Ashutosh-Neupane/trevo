@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 
 interface KanbanCardData {
@@ -15,9 +16,6 @@ interface KanbanCardProps {
   onEdit?: (card: KanbanCardData) => void;
   onDelete?: (card: KanbanCardData) => void;
   onClick?: (card: KanbanCardData) => void;
-  draggable?: boolean;
-  onDragStart?: (e: React.DragEvent, card: KanbanCardData) => void;
-  onDragEnd?: (e: React.DragEvent) => void;
   compact?: boolean;
 }
 
@@ -26,36 +24,51 @@ export function KanbanCard({
   onEdit,
   onDelete,
   onClick,
-  draggable = true,
-  onDragStart,
-  onDragEnd,
   compact = false,
 }: KanbanCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent) => {
-      if (draggable && onDragStart) {
-        onDragStart(e, card);
-      }
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: card.id,
+  });
+
+  const handleClick = useCallback(
+    () => {
+      // Ignore clicks that began as drags
+      if (isDragging) return;
+      onClick?.(card);
     },
-    [draggable, card, onDragStart],
+    [isDragging, onClick, card],
   );
 
   return (
     <div
-      draggable={draggable}
-      onDragStart={handleDragStart}
-      onDragEnd={onDragEnd}
-      onClick={() => onClick?.(card)}
-      className="group relative cursor-pointer rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition-all hover:shadow-md active:shadow-inner dark:border-zinc-700 dark:bg-zinc-800"
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (!isDragging) onClick?.(card);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      style={{
+        transform: transform
+          ? `translate(${transform.x}px, ${transform.y}px)`
+          : undefined,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      className={`group relative cursor-grab touch-none rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition-all hover:shadow-md active:cursor-grabbing dark:border-zinc-700 dark:bg-zinc-800 ${
+        isDragging ? "z-50" : ""
+      }`}
     >
       {/* Drag handle */}
-      {draggable && (
-        <div className="absolute left-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="h-3.5 w-3.5 text-zinc-400" />
-        </div>
-      )}
+      <div className="absolute left-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <GripVertical className="h-3.5 w-3.5 text-zinc-400" />
+      </div>
 
       {/* Card actions */}
       <div className="absolute right-1 top-1">

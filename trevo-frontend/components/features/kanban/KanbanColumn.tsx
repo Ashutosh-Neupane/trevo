@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { Plus, Archive } from "lucide-react";
 import { KanbanCard } from "./KanbanCard";
 import type { KanbanCardData } from "./KanbanCard";
@@ -30,21 +31,11 @@ export function KanbanColumn({
   onArchiveColumn,
   onDrop,
 }: KanbanColumnProps) {
-  const [dragOver, setDragOver] = useState(false);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setDragOver(false);
-  }, []);
+  const { setNodeRef, isOver } = useDroppable({ id });
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      setDragOver(false);
       onDrop?.(e, id);
     },
     [id, onDrop],
@@ -70,12 +61,11 @@ export function KanbanColumn({
 
   return (
     <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      ref={setNodeRef}
       onDrop={handleDrop}
       className={`flex w-72 shrink-0 flex-col rounded-xl border-2 transition-colors ${
         colorMap[color] ?? colorMap.zinc
-      } ${dragOver ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30" : ""}`}
+      } ${isOver ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30" : ""}`}
     >
       {/* Column header */}
       <div className="flex items-center justify-between px-3 py-2.5">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -46,6 +46,17 @@ export function GanttView({
 }: GanttViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [hasPrev, setHasPrev] = useState(false);
+  const [hasNext, setHasNext] = useState(false);
+
+  // Track scroll position for nav button enable/disable
+  const updateNavState = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setHasPrev(el.scrollLeft > 4);
+    setHasNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
 
   // Fetch tasks
   const { data, isLoading } = useQuery({
@@ -66,7 +77,14 @@ export function GanttView({
     },
   });
 
-  const tasks = data ?? [];
+  const tasks = useMemo(() => data ?? [], [data]);
+
+  useEffect(() => {
+    updateNavState();
+    // Recompute after tasks load / mode changes
+    const t = setTimeout(updateNavState, 50);
+    return () => clearTimeout(t);
+  }, [tasks, viewMode, updateNavState]);
 
   // Calculate date range
   const dateRange = useMemo(() => {
@@ -152,9 +170,16 @@ export function GanttView({
     [dateRange, dayWidth],
   );
 
-const handleScroll = (_direction: "left" | "right") => {
+const handleScroll = useCallback((direction: "left" | "right") => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
     const scrollAmount = viewMode === "day" ? 7 : viewMode === "week" ? 4 : viewMode === "month" ? 3 : 1;
-  };
+    const targetDays = scrollAmount * dayWidth;
+    el.scrollBy({
+      left: direction === "right" ? targetDays : -targetDays,
+      behavior: "smooth",
+    });
+  }, [viewMode, dayWidth]);
 
   if (isLoading) {
     return (
@@ -191,10 +216,10 @@ const handleScroll = (_direction: "left" | "right") => {
 
           {/* Navigation */}
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={() => handleScroll("left")}>
+            <Button variant="outline" size="sm" onClick={() => handleScroll("left")} disabled={!hasPrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => handleScroll("right")}>
+            <Button variant="outline" size="sm" onClick={() => handleScroll("right")} disabled={!hasNext}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -209,7 +234,11 @@ const handleScroll = (_direction: "left" | "right") => {
         </div>
       ) : (
         <div className="flex-1 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-          <div className="overflow-x-auto">
+          <div
+            ref={scrollContainerRef}
+            onScroll={updateNavState}
+            className="overflow-x-auto"
+          >
             <div className="min-w-max" style={{ width: 800 + timelineWidth }}>
               {/* Timeline header */}
               <div className="flex border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">

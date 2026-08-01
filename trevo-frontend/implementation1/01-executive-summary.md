@@ -19,7 +19,7 @@ Trevo Frontend is a Next.js 16 (App Router) + React 19 application serving as a 
 **Critical Weaknesses:**
 - ❌ Empty `next.config.ts` — no security headers, image optimization, rewrites, or caching
 - ❌ Hardcoded CSRF token (`"X-Frappe-CSRF-Token": "fetch"`) — not actually fetched
-- ❌ No rate limiting on any API route — DoS vulnerability
+- ❌ No rate limiting on most API routes — DoS vulnerability
 - ❌ No input validation on API routes — injection vulnerability
 - ❌ Inconsistent error handling — mixed patterns, no standardized format
 - ❌ No logging/monitoring/observability infrastructure
@@ -36,13 +36,14 @@ Trevo Frontend is a Next.js 16 (App Router) + React 19 application serving as a 
 - ❌ No a11y audit — missing ARIA labels, keyboard nav issues
 
 ## Project Goals
-1. **Security**: Achieve OWASP Top 10 compliance, implement proper CSRF, rate limiting, secrets management
-2. **Architecture**: Clean Architecture with domain-driven organization, service layer abstraction
-3. **Performance**: Implement caching, ISR, image optimization, bundle optimization
-4. **Maintainability**: Full TypeScript strict mode, comprehensive testing, documentation
-5. **Observability**: Logging, monitoring, error tracking, performance metrics
-6. **Developer Experience**: Prettier, lint-staged, husky, commit conventions, improved ESLint
-7. **Accessibility**: WCAG 2.1 AA compliance, ARIA labels, keyboard navigation
+1. **Porting**: Reach 80%+ Frappe frontend feature parity (Form Builder, Workflow, Linked With, Query Reports, SSR)
+2. **Security**: Achieve OWASP Top 10 compliance, implement proper CSRF, rate limiting, secrets management
+3. **Architecture**: Clean Architecture with domain-driven organization, service layer abstraction
+4. **Performance**: Implement caching, ISR, image optimization, bundle optimization
+5. **Maintainability**: Full TypeScript strict mode, comprehensive testing, documentation
+6. **Observability**: Logging, monitoring, error tracking, performance metrics
+7. **Developer Experience**: Prettier, lint-staged, husky, commit conventions, improved ESLint
+8. **Accessibility**: WCAG 2.1 AA compliance, ARIA labels, keyboard navigation
 
 ## Tech Stack
 | Layer | Technology |

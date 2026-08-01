@@ -14,6 +14,9 @@ interface DashboardWidget {
   y_field?: string;
   filters?: string;
   width?: string;
+  chart_data?: Array<Record<string, unknown>>;
+  chart_columns?: Array<{ fieldname?: string; label?: string }>;
+  chart_options?: Record<string, unknown>;
 }
 
 interface DashboardData {
@@ -60,10 +63,27 @@ export function DashboardView({ workspaceName }: DashboardViewProps) {
     );
   }
 
+  const transformChartData = (widget: DashboardWidget) => {
+    const chartData = widget.chart_data ?? [];
+    if (chartData.length === 0) return [];
+
+    const xKey = widget.x_field || (widget.chart_columns?.[0]?.fieldname as string | undefined) || "x";
+    const yKey = widget.y_field || (widget.chart_columns?.[1]?.fieldname as string | undefined) || "y";
+
+    return chartData.map((row) => ({
+      x: String(row[xKey] ?? row[(widget.chart_columns?.[0]?.fieldname || "x") as string] ?? "Unknown"),
+      y: typeof row[yKey] === "number" ? row[yKey] : Number(row[yKey] ?? 0),
+    }));
+  };
+
   const renderWidget = (widget: DashboardWidget, index: number) => {
     const colSpan = widget.width === "full" ? "lg:col-span-3" : widget.width === "half" ? "lg:col-span-2" : "lg:col-span-1";
 
     if (widget.chart_type && widget.source_doctype) {
+      const chartData = transformChartData(widget);
+      const xKey = widget.x_field || (widget.chart_columns?.[0]?.fieldname as string | undefined) || "x";
+      const yKey = widget.y_field || (widget.chart_columns?.[1]?.fieldname as string | undefined) || "y";
+
       return (
         <Card key={widget.name || index} className={`p-4 ${colSpan}`}>
           <div className="flex items-center justify-between mb-4">
@@ -76,18 +96,16 @@ export function DashboardView({ workspaceName }: DashboardViewProps) {
             <BarChart3 className="h-4 w-4 text-zinc-400" />
           </div>
           <div className="h-64">
-            {widget.chart_type === "line" ? (
-              <LineChartComponent
-                data={[]}
-                xKey={widget.x_field || "x"}
-                yKey={widget.y_field || "y"}
-              />
+            {chartData.length > 0 ? (
+              widget.chart_type === "line" ? (
+                <LineChartComponent data={chartData} xKey={xKey} yKey={yKey} />
+              ) : (
+                <BarChartComponent data={chartData} xKey={xKey} yKey={yKey} />
+              )
             ) : (
-              <BarChartComponent
-                data={[]}
-                xKey={widget.x_field || "x"}
-                yKey={widget.y_field || "y"}
-              />
+              <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+                No data available
+              </div>
             )}
           </div>
         </Card>
