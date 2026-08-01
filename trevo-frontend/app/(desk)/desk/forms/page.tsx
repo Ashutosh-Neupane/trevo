@@ -1,18 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useDoctypes } from "@/lib/hooks/useDoctypes";
 import { FileText, Search } from "lucide-react";
+import { QuickEntryDialog } from "@/components/features/quick-entry";
 
 export default function FormsPage() {
   const { data: doctypes, isLoading } = useDoctypes();
   const [query, setQuery] = useState("");
+  const [quickEntryOpen, setQuickEntryOpen] = useState(false);
+  const [selectedDoctype, setSelectedDoctype] = useState<string>("");
 
   const filtered = (doctypes ?? []).filter((dt: { name: string; module?: string }) =>
     dt.name.toLowerCase().includes(query.toLowerCase()) ||
     (dt.module ?? "").toLowerCase().includes(query.toLowerCase())
   );
+
+  const handleSelectDoctype = (name: string) => {
+    setSelectedDoctype(name);
+    setQuickEntryOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -43,10 +50,10 @@ export default function FormsPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((dt: { name: string; module?: string }) => (
-            <Link
+            <button
               key={dt.name}
-              href={`/desk/doctype/${encodeURIComponent(dt.name)}/new`}
-              className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-5 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600"
+              onClick={() => handleSelectDoctype(dt.name)}
+              className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-5 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600 text-left"
             >
               <div className="rounded-lg bg-zinc-100 p-3 dark:bg-zinc-700">
                 <FileText className="h-6 w-6 text-zinc-600 dark:text-zinc-300" />
@@ -57,7 +64,7 @@ export default function FormsPage() {
                   <p className="text-xs text-zinc-500">{dt.module}</p>
                 )}
               </div>
-            </Link>
+            </button>
           ))}
           {filtered.length === 0 && (
             <div className="col-span-full rounded-lg border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
@@ -66,6 +73,15 @@ export default function FormsPage() {
           )}
         </div>
       )}
+
+      <QuickEntryDialog
+        open={quickEntryOpen}
+        onOpenChange={setQuickEntryOpen}
+        doctype={selectedDoctype}
+        onCreated={(name) => {
+          window.location.href = `/desk/doctype/${encodeURIComponent(selectedDoctype)}/${encodeURIComponent(name)}`;
+        }}
+      />
     </div>
   );
 }
