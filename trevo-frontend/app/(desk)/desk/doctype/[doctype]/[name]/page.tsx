@@ -13,6 +13,8 @@ import { Badge } from "@/components/shadcn/badge";
 import { FormSkeleton } from "@/components/Skeleton";
 import { MessageSquare, Paperclip, History, ArrowLeft } from "lucide-react";
 import DocumentActions from "@/components/DocumentActions";
+import { FormTimeline } from "@/components/features/timeline";
+import { AssignToDialog } from "@/components/features/bulk-operations/AssignToDialog";
 
 type DocRow = Record<string, unknown>;
 
@@ -22,6 +24,7 @@ export default function DoctypeDetailPage() {
   const doctype = decodeURIComponent(params.doctype);
   const name = decodeURIComponent(params.name);
   const [activeTab, setActiveTab] = useState("details");
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const { data: meta } = useDoctype(doctype);
   const { data: doc, isLoading, error } = useDocument(doctype, name, undefined, 30000);
@@ -121,6 +124,10 @@ export default function DoctypeDetailPage() {
           <TabsTrigger value="versions" className="gap-1.5">
             <History className="h-4 w-4" />
             Version History
+          </TabsTrigger>
+          <TabsTrigger value="timeline" className="gap-1.5">
+            <MessageSquare className="h-4 w-4" />
+            Timeline
           </TabsTrigger>
         </TabsList>
 
@@ -230,8 +237,19 @@ export default function DoctypeDetailPage() {
               <div className="p-8 text-center text-sm text-zinc-500">No version history.</div>
             )}
           </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+
+          <TabsContent value="timeline">
+            <FormTimeline doctype={doctype} docname={name} />
+          </TabsContent>
+        </Tabs>
+
+        <AssignToDialog
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          docnames={[name]}
+          onAssign={async () => {}}
+        />
+      </div>
   );
 }
