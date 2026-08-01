@@ -14,7 +14,7 @@ interface ImageDoc {
 }
 
 interface ImageViewProps {
-  doctype: string;
+  doctype?: string;
   docname?: string;
 }
 

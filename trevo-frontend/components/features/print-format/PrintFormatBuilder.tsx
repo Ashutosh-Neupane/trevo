@@ -55,7 +55,7 @@ interface PrintFormatConfig {
 }
 
 interface PrintFormatBuilderProps {
-  doctype: string;
+  doctype?: string;
   formatName?: string;
   initialConfig?: PrintFormatConfig;
   onSave?: (config: PrintFormatConfig) => void;
@@ -76,8 +76,8 @@ export function PrintFormatBuilder({
 }: PrintFormatBuilderProps) {
   const [config, setConfig] = useState<PrintFormatConfig>(
     initialConfig ?? {
-      name: formatName ?? `${doctype} Print Format`,
-      doctype,
+      name: formatName ?? `${doctype ?? "Document"} Print Format`,
+      doctype: doctype ?? "Document",
       sections: [DEFAULT_SECTION("section-1")],
       pageSize: "A4",
       orientation: "portrait",
@@ -93,7 +93,7 @@ export function PrintFormatBuilder({
   const { data: meta } = useQuery({
     queryKey: ["doctype-meta", doctype],
     queryFn: async () => {
-      const res = await fetch(`/api/doctype/${encodeURIComponent(doctype)}/meta`);
+      const res = await fetch(`/api/doctype/${encodeURIComponent(doctype ?? "Document")}/meta`);
       if (!res.ok) throw new Error("Failed to fetch meta");
       return res.json() as Promise<{ fields: Array<{ fieldname: string; label: string; fieldtype: string }> }>;
     },

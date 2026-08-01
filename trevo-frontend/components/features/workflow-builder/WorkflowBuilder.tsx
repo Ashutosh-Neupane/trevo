@@ -46,7 +46,7 @@ interface WorkflowConfig {
 }
 
 interface WorkflowBuilderProps {
-  doctype: string;
+  doctype?: string;
   initialConfig?: WorkflowConfig;
   onSave?: (config: WorkflowConfig) => void;
 }
@@ -56,8 +56,8 @@ const STATE_COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6", "#e
 export function WorkflowBuilder({ doctype, initialConfig, onSave }: WorkflowBuilderProps) {
   const [config, setConfig] = useState<WorkflowConfig>(
     initialConfig ?? {
-      name: `${doctype} Workflow`,
-      doctype,
+      name: `${doctype ?? "Document"} Workflow`,
+      doctype: doctype ?? "Document",
       states: [
         { name: "Draft", title: "Draft", color: "#f59e0b", isInitial: true },
         { name: "Submitted", title: "Submitted", color: "#22c55e", isFinal: true },

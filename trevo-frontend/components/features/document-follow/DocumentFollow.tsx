@@ -7,8 +7,8 @@ import { Button } from "@/components/shadcn/button";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 
 interface DocumentFollowProps {
-  doctype: string;
-  docname: string;
+  doctype?: string;
+  docname?: string;
 }
 
 export function DocumentFollow({ doctype, docname }: DocumentFollowProps) {

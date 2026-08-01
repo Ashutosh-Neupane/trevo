@@ -10,8 +10,8 @@ import { Card } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 
 interface TagEditorProps {
-  doctype: string;
-  docname: string;
+  doctype?: string;
+  docname?: string;
 }
 
 interface TagDoc {
