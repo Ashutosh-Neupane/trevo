@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, ExternalLink, FileText, Clock } from "lucide-react";
+import { Bell, CheckCheck, ExternalLink, Clock } from "lucide-react";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { useMarkNotificationRead } from "@/lib/hooks/useNotifications";
-import { useUIStore } from "@/lib/stores/ui.store";
-
-const TIME_AGO_FORMATTER = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -30,7 +27,6 @@ export default function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const { data: notifications, isLoading } = useNotifications();
   const markReadMutation = useMarkNotificationRead();
-  const uiStore = useUIStore();
 
   const unreadCount = notifications?.filter((n) => !n.seen).length ?? 0;
 

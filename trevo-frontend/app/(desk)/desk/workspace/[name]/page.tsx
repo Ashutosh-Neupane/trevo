@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useWorkspace } from "@/lib/hooks/useWorkspaces";
+import type { WorkspaceData } from "@/lib/frappe/types";
 import { useReport } from "@/lib/hooks/useReport";
 import { Card } from "@/components/shadcn/card";
 import { BarChart3, LayoutDashboard, Plus } from "lucide-react";
@@ -42,10 +43,10 @@ export default function WorkspacePage() {
     );
   }
 
-  const shortcuts = workspace.shortcuts ?? [];
-  const links = workspace.links ?? [];
-  const numberCards = workspace.number_cards ?? [];
-  const charts = workspace.charts ?? [];
+  const shortcuts: WorkspaceData["shortcuts"] = workspace.shortcuts ?? [];
+  const links: WorkspaceData["links"] = workspace.links ?? [];
+  const numberCards: WorkspaceData["number_cards"] = workspace.number_cards ?? [];
+  const charts: WorkspaceData["charts"] = workspace.charts ?? [];
 
   return (
     <div className="space-y-6">

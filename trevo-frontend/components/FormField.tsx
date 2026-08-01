@@ -14,11 +14,6 @@ interface FormFieldProps {
   errors?: Record<string, string>;
 }
 
-function OptionValue({ value }: { value: unknown }) {
-  if (value === null || value === undefined || value === "") return null;
-  return <span>{String(value)}</span>;
-}
-
 export function isStructuralField(field: DocField) {
   return STRUCTURAL_TYPES.has(field.fieldtype);
 }

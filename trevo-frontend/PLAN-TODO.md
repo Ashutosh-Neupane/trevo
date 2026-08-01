@@ -26,26 +26,29 @@
 ## Phase B: Complete Remaining P0 Features (Next Priority — ~40h)
 
 ### B1. Form Builder (P0-7) — 24h
-- Drag-and-drop form layout editor
-- Field palette sidebar
-- Section/column management
-- Field property editor
-- Preview mode
-- Save/load form customizations
+- [x] Drag-and-drop form layout editor
+- [x] Field palette sidebar
+- [x] Section/column management
+- [x] Field property editor
+- [x] Preview mode
+- [x] Save/load form customizations
+- [x] Wire FormBuilder into `/desk/doctype/[doctype]/builder` route
 
 ### B2. Dashboard Real Data (P0-3) — 8h
 - Wire `DashboardView` to real chart data via `frappe.desk.query_report.run`
 - Number card aggregation counts
 - Chart widget data fetching
 
-### B3. Workflow Actions (P1-4) — 8h
-- Workflow state transition UI
-- Approval workflow buttons
-- Workflow timeline visualization
+### B3. Workflow Actions (P1-4) — 8h ✅ DONE
+- [x] Workflow state transition UI
+- [x] Approval workflow buttons
+- [x] Workflow timeline visualization
+- [x] Wired into doctype detail page "Workflow" tab
 
-### B4. Linked With Panel (P1-10) — 4h
-- Show documents linked to current document
-- Quick navigation between linked docs
+### B4. Linked With Panel (P1-10) — 4h ✅ DONE
+- [x] Show documents linked to current document
+- [x] Quick navigation between linked docs
+- [x] Wired into doctype detail page
 
 ---
 

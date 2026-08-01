@@ -7,7 +7,6 @@ import {
   ShoppingCart,
   Users,
   DollarSign,
-  TrendingUp,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
@@ -17,13 +16,6 @@ import { useBootInfo } from "@/lib/hooks/useBootInfo";
 import { useListCount } from "@/lib/hooks/useList";
 import { useWorkspaces } from "@/lib/hooks/useWorkspaces";
 import { Card } from "@/components/shadcn/card";
-
-const STATS_CONFIG = [
-  { doctype: "Sales Order", label: "Sales Orders", icon: ShoppingCart, color: "blue" },
-  { doctype: "Customer", label: "Customers", icon: Users, color: "green" },
-  { doctype: "Invoice", label: "Invoices", icon: FileText, color: "purple" },
-  { doctype: "Payment Entry", label: "Payments", icon: DollarSign, color: "yellow" },
-] as const;
 
 const COLOR_MAP = {
   blue: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",

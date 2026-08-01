@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/frappe/auth";
 
@@ -13,6 +13,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Redirect to desk if already authenticated (effect avoids setState during render)
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/desk");
+    }
+  }, [loading, user, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +37,7 @@ export default function LoginPage() {
   }
 
   if (!loading && user) {
-    router.replace("/desk");
+    return null;
   }
 
   return (

@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import FormRenderer from "@/lib/trevo-form/renderers/FormRenderer";
 import { useDoctype } from "@/lib/hooks/useDoctype";
-import { frappeGet } from "@/lib/frappe/client";
 
 export default function DoctypeNewPage() {
   const params = useParams<{ doctype: string }>();

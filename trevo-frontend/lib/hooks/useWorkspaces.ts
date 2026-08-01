@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchWorkspaceSidebarClient, fetchWorkspaceDataClient } from "@/lib/frappe/workspace";
-import type { WorkspaceSidebarItem, WorkspaceData } from "@/lib/frappe/types";
 
 export function useWorkspaces() {
   return useQuery({

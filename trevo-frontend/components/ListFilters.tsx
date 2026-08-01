@@ -83,16 +83,17 @@ export default function ListFilters({ filters, onFiltersChange, availableFilters
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <Button variant="outline" size="sm" onClick={openFilters} className="gap-1.5">
-          <Filter className="h-4 w-4" />
-          Filters
-          {activeCount > 0 && (
-            <span className="rounded-full bg-zinc-900 px-1.5 py-0.5 text-xs text-white dark:bg-zinc-100 dark:text-zinc-900">
-              {activeCount}
-            </span>
-          )}
-        </Button>
+      <PopoverTrigger
+        className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+        onClick={openFilters}
+      >
+        <Filter className="h-4 w-4" />
+        Filters
+        {activeCount > 0 && (
+          <span className="rounded-full bg-zinc-900 px-1.5 py-0.5 text-xs text-white dark:bg-zinc-100 dark:text-zinc-900">
+            {activeCount}
+          </span>
+        )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80">
         <div className="space-y-4">

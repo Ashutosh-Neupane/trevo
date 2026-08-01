@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import {
   Search,
   FileText,
   Plus,
-  Settings,
-  User,
   LogOut,
   Moon,
   Sun,

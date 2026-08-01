@@ -66,27 +66,28 @@
 - [ ] P0-4.7: **Wire ImportDialog/ExportDialog into the doctype list page**
 
 #### P0-7: Form Builder
-- [ ] P0-7.1: Create FormBuilder main component
-- [ ] P0-7.2: Create FieldPalette sidebar
-- [ ] P0-7.3: Create drag-and-drop field placement
-- [ ] P0-7.4: Create FieldProperties editor
-- [ ] P0-7.5: Add section/column management
-- [ ] P0-7.6: Create preview mode
-- [ ] P0-7.7: Create API routes for form builder
-- [ ] P0-7.8: Save/load form customizations
+- [x] P0-7.1: Create FormBuilder main component
+- [x] P0-7.2: Create FieldPalette sidebar
+- [x] P0-7.3: Create drag-and-drop field placement
+- [x] P0-7.4: Create FieldProperties editor
+- [x] P0-7.5: Add section/column management
+- [x] P0-7.6: Create preview mode
+- [x] P0-7.7: Create API routes for form builder
+- [x] P0-7.8: Save/load form customizations
+- [ ] P0-7.9: **Wire FormBuilder into actual route** (`/desk/doctype/[doctype]/builder`) — components exist but were orphaned
 
 ### Phase P1: Important Features
 
 - [x] P1-1: Realtime/Socket.io integration — `lib/services/realtime.ts` (shared singleton) + `useRealtimeUpdates.ts` (typed subscriptions for doc_update/docinfo_update/list_update/new_comment/version)
 - [ ] P1-2: **Query Report builder** (runner exists; add filters/columns/aggregation UI)
 - [ ] P1-3: Print Format Builder
-- [ ] P1-4: **Workflow Actions** (workflow state transitions UI)
+- [x] P1-4: **Workflow Actions** (workflow state transitions UI) — wired into doctype detail page
 - [x] P1-5: Form Timeline (comments, activity log, versions) — `components/features/timeline/FormTimeline.tsx`
 - [ ] P1-6: File View/Browser
 - [x] P1-7: Communication/Timeline — read-only tabs (comments/attachments/versions) in detail page
 - [x] P1-8: Assign To Dialog — `components/features/bulk-operations/AssignToDialog.tsx`
 - [x] P1-9: ShareDialog wired — `frappe.share.add`/`get_users`/`remove` via BFF proxy with user search, permission levels, existing-user list
-- [ ] P1-10: **Linked With panel** (`frappe.desk.form.utils.get_linked_docs`)
+- [x] P1-10: **Linked With panel** (`frappe.desk.form.utils.get_linked_docs`) — wired into doctype detail page
 - [x] P1-11: Global Search — CommandPalette + `lib/frappe/search.ts` (searchLink, globalSearch)
 - [x] P1-12: Number Cards — live counts in workspace page
 - [x] P1-13: Undo Manager — Ctrl+Z 50-entry stack in FormRenderer
@@ -144,7 +145,7 @@
 - [ ] Convert `desk/doctype/page.tsx` to Server Component (already partially server-side)
 - [ ] Convert `desk/doctype/[doctype]/page.tsx` list view to SSR-first with client islands
 - [ ] Convert `desk/reports`, `desk/calendar`, `desk/workspace` to SSR where possible
-- [ ] Add route-specific `loading.tsx` / `error.tsx` boundaries
+- [x] Add route-specific `loading.tsx` / `error.tsx` boundaries
 - [ ] Add `React.cache()` for server data fetching dedup
 - [ ] Add `generateMetadata` for SEO
 - [ ] Add ISR where static data allows (doctype list, meta)

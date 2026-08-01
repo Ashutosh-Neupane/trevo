@@ -42,13 +42,6 @@ export function ExportDialog({
   const [exportAll, setExportAll] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Keep fields in sync when initialFields changes
-  useMemo(() => {
-    if (initialFields.length > 0 && fields.length === 0) {
-      setFields(initialFields.map((f) => ({ ...f, selected: true })));
-    }
-  }, [initialFields, fields.length]);
-
   const selectedFields = useMemo(
     () => fields.filter((f) => f.selected),
     [fields],

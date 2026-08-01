@@ -88,6 +88,7 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
             <button
               onClick={toggleSidebar}
               className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
               {sidebarOpen ? (
                 <PanelLeftClose className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
@@ -113,6 +114,7 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
@@ -137,6 +139,7 @@ export default function TrevoShell({ children }: { children: React.ReactNode }) 
               <button
                 onClick={logout}
                 className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Logout"
                 title="Logout"
               >
                 <LogOut className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />

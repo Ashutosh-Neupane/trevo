@@ -43,7 +43,7 @@ export default function DocumentActions({ doctype, name, onDeleted }: DocumentAc
     <>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger>
-          <button className="rounded-lg border border-zinc-300 p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+          <button className="rounded-lg border border-zinc-300 p-2 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800" aria-label="Document actions">
             <MoreVertical className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
           </button>
         </DropdownMenuTrigger>

@@ -94,7 +94,7 @@ const INITIAL_LAYOUT: FormLayout = {
 
 export const useTrevoFormStore = create<TrevoFormStore>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // Document
       document: null,
       isDirty: false,

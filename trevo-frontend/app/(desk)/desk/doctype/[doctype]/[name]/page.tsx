@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useDocument } from "@/lib/hooks/useDocument";
@@ -11,7 +11,7 @@ import { Card } from "@/components/shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Badge } from "@/components/shadcn/badge";
 import { FormSkeleton } from "@/components/Skeleton";
-import { MessageSquare, Paperclip, History, ArrowLeft } from "lucide-react";
+import { MessageSquare, Paperclip, History, ArrowLeft, Send, Loader2 } from "lucide-react";
 import DocumentActions from "@/components/DocumentActions";
 import { FormTimeline } from "@/components/features/timeline";
 import { AssignToDialog } from "@/components/features/bulk-operations/AssignToDialog";
@@ -25,8 +25,10 @@ export default function DoctypeDetailPage() {
   const router = useRouter();
   const doctype = decodeURIComponent(params.doctype);
   const name = decodeURIComponent(params.name);
-  const [activeTab, setActiveTab] = useState("details");
+const [activeTab, setActiveTab] = useState("details");
   const [assignOpen, setAssignOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commenting, setCommenting] = useState(false);
 
   const { data: meta } = useDoctype(doctype);
   const { data: doc, isLoading, error } = useDocument(doctype, name, undefined, 30000);
@@ -42,11 +44,46 @@ export default function DoctypeDetailPage() {
     prevModifiedRef.current = doc.modified;
   }, [doc]);
 
-  const { data: comments } = useQuery({
+  const { data: comments, refetch: refetchComments } = useQuery({
     queryKey: ["comments", doctype, name],
     queryFn: async () => frappeMethod<DocRow[]>("frappe.desk.form.load.get_comments", { doctype, name }),
     staleTime: 60_000,
   });
+
+  const handleAddComment = useCallback(async () => {
+    if (!commentText.trim()) return;
+    setCommenting(true);
+    try {
+      await frappeMethod("frappe.desk.form.add_comment", {
+        doctype,
+        name,
+        comment: commentText.trim(),
+      });
+      setCommentText("");
+      refetchComments();
+      toast.success("Comment added");
+    } catch {
+      // Fallback: try frappe.client.insert
+      try {
+        await frappeMethod("frappe.client.insert", {
+          doc: {
+            doctype: "Comment",
+            comment_type: "Comment",
+            reference_doctype: doctype,
+            reference_name: name,
+            content: commentText.trim(),
+          },
+        });
+        setCommentText("");
+        refetchComments();
+        toast.success("Comment added");
+      } catch {
+        toast.error("Failed to add comment");
+      }
+    } finally {
+      setCommenting(false);
+    }
+  }, [commentText, doctype, name, refetchComments]);
 
   const { data: versions } = useQuery({
     queryKey: ["versions", doctype, name],
@@ -155,28 +192,64 @@ export default function DoctypeDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="comments">
+<TabsContent value="comments">
           <Card className="p-0 overflow-hidden">
             {!comments ? (
               <div className="flex items-center justify-center p-8">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
               </div>
-            ) : comments.length > 0 ? (
-              <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
-                {comments.map((c: DocRow) => (
-                  <div key={c.name as string} className="p-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {(c.comment_by || c.comment_email || "Unknown") as string}
-                      </span>
-                      <span className="text-xs text-zinc-500">{(c.creation ? new Date(c.creation as string).toLocaleString() : "") as string}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{(c.content || c.comment || "-") as string}</p>
-                  </div>
-                ))}
-              </div>
             ) : (
-              <div className="p-8 text-center text-sm text-zinc-500">No comments yet.</div>
+              <>
+                {comments.length > 0 ? (
+                  <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
+                    {comments.map((c: DocRow) => (
+                      <div key={c.name as string} className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            {(c.comment_by || c.comment_email || "Unknown") as string}
+                          </span>
+                          <span className="text-xs text-zinc-500">{(c.creation ? new Date(c.creation as string).toLocaleString() : "") as string}</span>
+                        </div>
+                        <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{(c.content || c.comment || "-") as string}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-sm text-zinc-500">No comments yet.</div>
+                )}
+
+                {/* Comment input */}
+                <div className="border-t border-zinc-200 p-4 dark:border-zinc-700">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddComment();
+                        }
+                      }}
+                      disabled={commenting}
+                    />
+                    <button
+                      onClick={handleAddComment}
+                      disabled={!commentText.trim() || commenting}
+                      className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      aria-label="Send comment"
+                    >
+                      {commenting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </Card>
         </TabsContent>
