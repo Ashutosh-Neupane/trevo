@@ -1,59 +1,66 @@
 /**
- * CSRF Protection utility for API routes.
- * Uses double-submit cookie pattern with a cryptographically random token.
+ * CSRF Protection Service
+ *
+ * Generates and validates CSRF tokens to protect against cross-site request forgery.
+ * Uses a combination of cookie-based double-submit pattern and token validation.
+ *
+ * Reference: implementation1/14-secret-management-review.md
  */
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 
-const CSRF_COOKIE_NAME = "csrf-token";
+import crypto from "crypto";
+
+const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER_NAME = "x-csrf-token";
+const CSRF_COOKIE_NAME = "csrf-token";
 
 /**
- * Generate a cryptographically random CSRF token.
+ * Generate a cryptographically secure CSRF token.
  */
 export function generateCsrfToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString("hex");
 }
 
 /**
- * Set the CSRF token cookie on a response.
+ * Validate a CSRF token against the expected value.
+ * Uses constant-time comparison to prevent timing attacks.
  */
-export function setCsrfCookie(response: NextResponse): NextResponse {
-  const token = generateCsrfToken();
-  response.cookies.set(CSRF_COOKIE_NAME, token, {
-    httpOnly: false, // Must be readable by client JS to send as header
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24, // 24 hours
-  });
-  return response;
+export function validateCsrfToken(
+  token: string | null | undefined,
+  expectedToken: string | null | undefined,
+): boolean {
+  if (!token || !expectedToken) return false;
+  if (token.length !== expectedToken.length) return false;
+
+  // Constant-time comparison to prevent timing attacks
+  let result = 0;
+  for (let i = 0; i < token.length; i++) {
+    result |= token.charCodeAt(i) ^ expectedToken.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 /**
- * Validate CSRF token from request against cookie.
- * Safe methods (GET, HEAD, OPTIONS) are always allowed.
+ * Get the expected CSRF header name for client requests.
  */
-export async function validateCsrf(request: Request): Promise<{ valid: boolean; reason?: string }> {
-  const method = request.method.toUpperCase();
-  // Safe methods don't need CSRF protection
-  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
-    return { valid: true };
-  }
+export function getCsrfHeaderName(): string {
+  return CSRF_HEADER_NAME;
+}
 
-  const cookieStore = await cookies();
-  const cookieToken = cookieStore.get(CSRF_COOKIE_NAME)?.value;
-  const headerToken = request.headers.get(CSRF_HEADER_NAME);
+/**
+ * Get the CSRF cookie name.
+ */
+export function getCsrfCookieName(): string {
+  return CSRF_COOKIE_NAME;
+}
 
-  if (!cookieToken || !headerToken) {
-    return { valid: false, reason: "Missing CSRF token" };
-  }
+/**
+ * CSRF-safe methods that don't require token validation.
+ */
+const SAFE_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
 
-  if (cookieToken !== headerToken) {
-    return { valid: false, reason: "CSRF token mismatch" };
-  }
-
-  return { valid: true };
+/**
+ * Check if a request method requires CSRF protection.
+ */
+export function requiresCsrfProtection(method: string): boolean {
+  return !SAFE_METHODS.has(method.toUpperCase());
 }
