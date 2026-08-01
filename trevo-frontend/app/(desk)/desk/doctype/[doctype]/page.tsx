@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Search, Download, Upload } from "lucide-react";
 import { useDoctype } from "@/lib/hooks/useDoctype";
 import { useList } from "@/lib/hooks/useList";
@@ -30,6 +30,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 export default function DoctypeListView() {
   const params = useParams<{ doctype: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const doctype = decodeURIComponent(params.doctype);
 
   const [page, setPage] = useState(0);
@@ -46,6 +47,54 @@ export default function DoctypeListView() {
 
   const { data: meta } = useDoctype(doctype);
   const isSubmittable = !!meta?.is_submittable;
+
+  const syncFiltersToUrl = useCallback(() => {
+    const params = new URLSearchParams();
+    if (sortBy !== "modified") params.set("sortBy", sortBy);
+    if (sortOrder !== "desc") params.set("sortOrder", sortOrder);
+    if (pageSize !== 20) params.set("pageSize", String(pageSize));
+    if (searchQuery) params.set("search", searchQuery);
+    if (viewMode !== "list") params.set("view", viewMode);
+    for (const [field, { value, operator, valueTo }] of Object.entries(filterState)) {
+      if (value) {
+        params.set(`f_${field}`, `${operator}:${value}${valueTo ? `:${valueTo}` : ""}`);
+      }
+    }
+    const qs = params.toString();
+    const newUrl = qs ? `/desk/doctype/${encodeURIComponent(doctype)}?${qs}` : `/desk/doctype/${encodeURIComponent(doctype)}`;
+    router.replace(newUrl, { scroll: false });
+  }, [doctype, router, sortBy, sortOrder, pageSize, searchQuery, viewMode, filterState]);
+
+  const loadFiltersFromUrl = useCallback(() => {
+    const sort = searchParams.get("sortBy");
+    const order = searchParams.get("sortOrder");
+    const ps = searchParams.get("pageSize");
+    const search = searchParams.get("search");
+    const view = searchParams.get("view");
+    if (sort) setSortBy(sort);
+    if (order) setSortOrder(order as "asc" | "desc");
+    if (ps) setPageSize(Number(ps));
+    if (search) setSearchQuery(search);
+    if (view && ["list", "kanban", "gantt", "tree"].includes(view)) setViewMode(view as typeof viewMode);
+    const newFilterState: Record<string, { value: string; operator: FilterOperator; valueTo?: string }> = {};
+    for (const [key, raw] of Array.from(searchParams.entries())) {
+      if (key.startsWith("f_")) {
+        const fieldname = key.slice(2);
+        const [operator, value, valueTo] = raw.split(":");
+        newFilterState[fieldname] = { value, operator: operator as FilterOperator, valueTo };
+      }
+    }
+    if (Object.keys(newFilterState).length > 0) setFilterState(newFilterState);
+  }, [searchParams]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadFiltersFromUrl();
+  }, [loadFiltersFromUrl]);
+
+  useEffect(() => {
+    syncFiltersToUrl();
+  }, [syncFiltersToUrl]);
 
   const listFields = useMemo(() => {
     const fields = meta?.fields;
