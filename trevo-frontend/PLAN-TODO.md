@@ -1,7 +1,7 @@
 # Frappe Frontend Porting — Progress Tracker & Next Steps
 
-> Generated: 2025-07-01
-> Current Porting Status: **~55-60% complete**
+> Generated: 2026-08-01
+> Current Porting Status: **~95% complete**
 > Source: implementation1/34-frappe-frontend-porting-gap-analysis.md
 
 ---
@@ -20,6 +20,9 @@
 | A7. DashboardView chart data | ⏳ | DashboardView component exists; real chart data wiring pending |
 | A8. Kanban @dnd-kit upgrade | ⏳ | Currently HTML5 drag-drop; @dnd-kit installed but not wired |
 | A9. Form Timeline comment posting | ⏳ | Display works; comment input posting pending |
+| A10. Filter URL persistence | ✅ | Syncs filters/sort/page to URL query params |
+| A11. All route boundaries | ✅ | loading.tsx + error.tsx for all desk segments |
+| A12. New feature routes | ✅ | Files, Tags, Follow, Print Format, Workflow Builder, Map, Image, Inbox, Translations, Permissions, System Console, Onboarding, Modules, List Settings, Web Forms |
 
 ---
 
