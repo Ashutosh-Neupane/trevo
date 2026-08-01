@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 
 export function useKeyboardShortcuts() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import type { FieldControlProps } from "./index";
 
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+ 
 export default function HTMLField({ field: _field, value }: FieldControlProps) {
   return (
     <div

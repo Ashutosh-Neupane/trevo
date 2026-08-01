@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { frappeServerFetch, getCookieHeader } from "@/lib/frappe/server";
 
 const VALID_ACTIONS = ["Save", "Submit", "Update"];

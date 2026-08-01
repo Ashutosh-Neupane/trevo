@@ -2,7 +2,6 @@
 
 import type { FieldControlProps } from "./index";
 
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 export default function ReadOnlyField({ field: _field, value }: FieldControlProps) {
   let display = "-";
   if (value !== null && value !== undefined && value !== "") {

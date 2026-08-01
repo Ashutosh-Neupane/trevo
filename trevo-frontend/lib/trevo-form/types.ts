@@ -3,8 +3,6 @@
  * A modern, production-quality form system that surpasses Frappe Desk UX.
  */
 
-import type { DocField, DocTypeMeta, FrappeDocument } from "@/lib/frappe/types";
-
 // ---------------------------------------------------------------------------
 // Core field type — extends Frappe's DocField with our enhancements
 // ---------------------------------------------------------------------------

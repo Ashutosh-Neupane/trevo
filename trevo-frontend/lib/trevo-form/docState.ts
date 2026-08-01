@@ -3,7 +3,7 @@
  * Far more robust than Frappe's simple doc dict.
  */
 
-import type { TrevoDocument, TrevoField, ChildTableData } from "./types";
+import type { TrevoDocument, ChildTableData } from "./types";
 
 const MAX_UNDO_HISTORY = 50;
 
@@ -245,6 +245,7 @@ export class DocumentState {
 
     // Revert child tables
     for (const fieldname of Object.keys(this.document.childTables)) {
+      void fieldname;
       // Reset child table data...
     }
   }

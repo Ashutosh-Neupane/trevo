@@ -8,7 +8,7 @@
  * 3. Maintains compatibility with existing Frappe customizations
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import type { DocTypeMeta } from "@/lib/frappe/types";
 
 interface FrappeScriptBridgeProps {
@@ -40,6 +40,7 @@ export function executeFrappeScript(
   },
 ): void {
   try {
+    /* eslint-disable-next-line no-new-func */
     const fn = new Function("doc", "frm", "cur_frm", "frappe", script);
     fn(context.doc, context.frm, context.frm, createFrappeStub());
   } catch (error) {
@@ -126,7 +127,7 @@ export interface FrappeFormAPI {
  * Place this inside your form component.
  */
 export function FrappeScriptBridge({
-  doctype,
+  doctype: _doctype,
   docname,
   values,
   meta,
@@ -137,7 +138,7 @@ export function FrappeScriptBridge({
   const apiRef = useRef<FrappeFormAPI | null>(null);
 
   // Build the Frappe form API
-  const api: FrappeFormAPI = {
+  const api: FrappeFormAPI = useMemo(() => ({
     doc: values,
     set_value: (fieldname, value) => onFieldChange(fieldname, value),
     get_value: (fieldname) => values[fieldname],
@@ -153,7 +154,7 @@ export function FrappeScriptBridge({
     set_read_only: () => {},
     add_custom_button: () => {},
     refresh: () => {},
-  };
+  }), [values, onFieldChange, onSave]);
 
   useEffect(() => {
     apiRef.current = api;

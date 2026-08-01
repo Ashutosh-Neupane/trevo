@@ -1,6 +1,6 @@
 "use client";
 
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 

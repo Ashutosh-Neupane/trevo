@@ -31,6 +31,7 @@ export function useRealtimeUpdates({
     //
     // For now, we'll set up the infrastructure:
     const rooms = [`doctype:${doctype}`, `doc:${doctype}:${docname}`];
+    void rooms;
 
     // Simulated subscription (replace with real Socket.io client)
     // frappe.realtime.on('docinfo_update', (data) => {
@@ -41,7 +42,7 @@ export function useRealtimeUpdates({
 
     return () => {
       // Cleanup subscriptions
-      // rooms.forEach(room => frappe.realtime.off(room));
+      // _rooms.forEach(room => frappe.realtime.off(room));
     };
   }, [doctype, docname, onUpdate, onComment, onVersion]);
 }
