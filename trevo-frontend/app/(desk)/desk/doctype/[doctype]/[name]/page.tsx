@@ -15,6 +15,8 @@ import { MessageSquare, Paperclip, History, ArrowLeft } from "lucide-react";
 import DocumentActions from "@/components/DocumentActions";
 import { FormTimeline } from "@/components/features/timeline";
 import { AssignToDialog } from "@/components/features/bulk-operations/AssignToDialog";
+import { WorkflowActions } from "@/components/features/workflow";
+import { LinkedWith } from "@/components/features/linked-with";
 
 type DocRow = Record<string, unknown>;
 
@@ -129,6 +131,8 @@ export default function DoctypeDetailPage() {
             <MessageSquare className="h-4 w-4" />
             Timeline
           </TabsTrigger>
+          <TabsTrigger value="workflow">Workflow</TabsTrigger>
+          <TabsTrigger value="linked">Linked With</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
@@ -241,6 +245,12 @@ export default function DoctypeDetailPage() {
 
           <TabsContent value="timeline">
             <FormTimeline doctype={doctype} docname={name} />
+          </TabsContent>
+          <TabsContent value="workflow">
+            <WorkflowActions doctype={doctype} name={name} currentState={doc?.workflow_state as string | undefined} />
+          </TabsContent>
+          <TabsContent value="linked">
+            <LinkedWith doctype={doctype} name={name} />
           </TabsContent>
         </Tabs>
 
